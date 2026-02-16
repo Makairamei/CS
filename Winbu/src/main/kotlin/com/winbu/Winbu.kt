@@ -1,18 +1,18 @@
 package com.winbu
 
 import com.lagradost.cloudstream3.*
-import com.lagradost.cloudstream3.base64Decode
+import com.lagradost.cloudstream3.LoadResponse.Companion.addScore
 import com.lagradost.cloudstream3.SubtitleFile
+import com.lagradost.cloudstream3.base64Decode
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.INFER_TYPE
+import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.getQualityFromName
-import com.lagradost.cloudstream3.LoadResponse.Companion.addScore  
 import com.lagradost.cloudstream3.utils.httpsify
 import com.lagradost.cloudstream3.utils.loadExtractor
 import com.lagradost.cloudstream3.utils.newExtractorLink
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
-import java.net.URLEncoder
 
 class Winbu : MainAPI() {
     override var mainUrl = "https://winbu.net"
@@ -34,21 +34,16 @@ class Winbu : MainAPI() {
     }
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
-    val document = app.get(pagedUrl(request.data, page)).document
+        val document = app.get(pagedUrl(request.data, page)).document
+        val items = document.select("#movies .ml-item, .movies-list .ml-item")
+            .mapNotNull { it.toSearchResult(request.name) }
+            .distinctBy { it.url }
 
-    val items = document.select(".movies-list .ml-item").mapNotNull {
-        it.toSearchResult(request.name)
+        val hasNext = document.select("#pagination .pagination a[href]")
+            .any { it.selectFirst("i.fa-caret-right") != null }
+
+        return newHomePageResponse(HomePageList(request.name, items), hasNext = hasNext)
     }
-
-    return newHomePageResponse(
-        list = HomePageList(
-            name = request.name,
-            list = items
-        ),
-        hasNext = items.isNotEmpty()
-    )
-}
-
 
     private fun parseEpisode(text: String?): Int? {
         if (text.isNullOrBlank()) return null
@@ -58,52 +53,40 @@ class Winbu : MainAPI() {
             ?.toInt()
     }
 
-    private fun String.urlEncoded(): String =
-        URLEncoder.encode(this, "UTF-8")
-
     private fun Element.toSearchResult(sectionName: String): SearchResponse? {
-    val anchor = selectFirst("a.ml-mask") ?: selectFirst("a[href]") ?: return null
-    val href = fixUrl(anchor.attr("href"))
+        val anchor = selectFirst("a.ml-mask") ?: selectFirst("a[href]") ?: return null
+        val href = fixUrl(anchor.attr("href"))
 
-    val title = anchor.attr("title").ifBlank {
-        selectFirst("div.judul")?.text().orEmpty()
-    }.ifBlank {
-        selectFirst("img.mli-thumb, img")?.attr("alt").orEmpty()
-    }.trim()
+        val title = anchor.attr("title").ifBlank {
+            selectFirst(".judul")?.text().orEmpty()
+        }.ifBlank {
+            selectFirst("img.mli-thumb, img")?.attr("alt").orEmpty()
+        }.trim()
+        if (title.isBlank()) return null
 
-    if (title.isBlank()) return null
+        val poster = selectFirst("img.mli-thumb, img")?.getImageAttr()?.let { fixUrlNull(it) }
+        val episode = parseEpisode(selectFirst("span.mli-episode")?.text())
 
-    val poster = selectFirst("img.mli-thumb, img")?.getImageAttr()?.let { fixUrlNull(it) }
+        val isMovie = sectionName.contains("Film", true) || href.contains("/film/", true)
 
-    val isFilm = sectionName.contains("Film", ignoreCase = true) || href.contains("/film/", ignoreCase = true)
-
-    return if (isFilm) {
-        newMovieSearchResponse(title, href, TvType.Movie) {
-            this.posterUrl = poster
-        }
-    } else {
-        val episodeText =
-            selectFirst("span.mli-episode")?.text()
-                ?: selectFirst("span.mli-info span")?.text()
-        val episode = parseEpisode(episodeText)
-
-        newAnimeSearchResponse(title, href, TvType.Anime) {
-            this.posterUrl = poster
-            if (episode != null) addSub(episode)
+        return if (isMovie) {
+            newMovieSearchResponse(title, href, TvType.Movie) {
+                this.posterUrl = poster
+            }
+        } else {
+            newAnimeSearchResponse(title, href, TvType.Anime) {
+                this.posterUrl = poster
+                if (episode != null) addSub(episode)
+            }
         }
     }
-}
 
     override suspend fun search(query: String): List<SearchResponse> {
-    val document = app.get("$mainUrl/?s=${query.urlEncoded()}").document
-    val results = document.select(".movies-list a[href]") 
-        .mapNotNull { a ->
-            val parent = a.closest("article, .ml-item, div") ?: return@mapNotNull null
-            parent.toSearchResult("Series")
-        }
-        .distinctBy { it.url }
-    return results
-}
+        val document = app.get("$mainUrl/?s=$query").document
+        return document.select("#movies .ml-item, .movies-list .ml-item")
+            .mapNotNull { it.toSearchResult("Series") }
+            .distinctBy { it.url }
+    }
 
     private fun cleanupTitle(rawTitle: String): String {
         return rawTitle
@@ -114,75 +97,151 @@ class Winbu : MainAPI() {
     }
 
     override suspend fun load(url: String): LoadResponse {
-    val document = app.get(url).document
+        val document = app.get(url).document
+        val infoRoot = document.selectFirst(".m-info .t-item") ?: document
 
-    val rawTitle = document.selectFirst("h1")?.text()
-        ?: document.selectFirst("div.judul")?.text()
-        ?: document.selectFirst("meta[property=\"og:title\"]")?.attr("content")
-        ?: "No Title"
-    val title = cleanupTitle(rawTitle)
+        val rawTitle = infoRoot.selectFirst(".mli-info .judul")?.text()
+            ?: document.selectFirst("h1")?.text()
+            ?: document.selectFirst("meta[property=\"og:title\"]")?.attr("content")
+            ?: "No Title"
+        val title = cleanupTitle(rawTitle)
 
-    val poster = document.selectFirst("meta[property=\"og:image\"]")?.attr("content")
-        ?: document.selectFirst("img")?.getImageAttr()
+        val poster = infoRoot.selectFirst("img.mli-thumb")?.getImageAttr()?.let { fixUrlNull(it) }
+            ?: document.selectFirst("meta[property=\"og:image\"]")?.attr("content")
+            ?: document.selectFirst("img")?.getImageAttr()?.let { fixUrlNull(it) }
 
-    val description =
-        document.selectFirst("div.mli-desc p")?.text()?.trim()
+        val description = infoRoot.selectFirst(".mli-desc")?.text()?.trim()
             ?: document.selectFirst("meta[name=\"description\"]")?.attr("content")
-            ?: document.select("p").firstOrNull { it.text().length > 60 }?.text()
 
-    val tags = document.select("a[rel=tag]").map { it.text().trim() }.distinct()
+        val tags = infoRoot.select(".mli-mvi a[rel=tag], a[rel=tag]")
+            .map { it.text().trim() }
+            .filter { it.isNotBlank() }
+            .distinct()
 
-    val recs = document.select("#randomList a, .movies-list .ml-item, .movies-list .t-item")
-        .mapNotNull { el ->
-            if (el.tagName() == "a") {
-                val href = el.attr("href").trim()
-                val recTitle = el.attr("title").ifBlank { el.text() }.trim()
-                val recPoster = el.selectFirst("img")?.getImageAttr()?.let { fixUrlNull(it) }
-                if (href.isBlank() || recTitle.isBlank()) null
-                else newMovieSearchResponse(recTitle, fixUrl(href), TvType.Movie) {
-                    this.posterUrl = recPoster
+        val score = infoRoot.selectFirst("span[itemprop=ratingValue]")?.text()?.toIntOrNull()
+
+        val recommendations = document.select("#movies .ml-item")
+            .mapNotNull { it.toSearchResult("Series") }
+            .filterNot { fixUrl(it.url) == fixUrl(url) }
+            .distinctBy { it.url }
+
+        val episodes = document.select(".tvseason .les-content a[href]")
+            .mapNotNull { a ->
+                val epText = a.text().trim()
+                val epNum = parseEpisode(epText)
+                if (epNum == null || !epText.contains("Episode", true)) return@mapNotNull null
+                Pair(epNum, fixUrl(a.attr("href")))
+            }
+            .distinctBy { it.second }
+            .sortedBy { it.first }
+            .map { (num, link) ->
+                newEpisode(link) {
+                    this.name = "Episode $num"
+                    this.episode = num
                 }
-            } else {
-                el.toSearchResult("Film")
             }
-        }
-        .distinctBy { it.url }
 
-    val episodeLinks = document.select("div.tvseason div.les-content a[href]")
-        .mapNotNull { a ->
-            val href = a.attr("href").trim()
-            if (href.isBlank()) return@mapNotNull null
-            val epText = a.text().trim()
-            val epNum = parseEpisode(epText)
-            newEpisode(fixUrl(href)) {
-                this.name = epText
-                this.episode = epNum
+        val isSeries = episodes.isNotEmpty() && !url.contains("/film/", true)
+
+        return if (isSeries) {
+            newTvSeriesLoadResponse(title, url, TvType.Anime, episodes) {
+                this.posterUrl = poster
+                this.plot = description
+                this.tags = tags
+                this.recommendations = recommendations
+                if (score != null) addScore(score.toString(), 10)
             }
-        }
-        .distinctBy { it.data }
-        .reversed()
-
-    val isFilm = url.contains("/film/", ignoreCase = true)
-    val isSeries = !isFilm && episodeLinks.isNotEmpty()
-
-    return if (isSeries) {
-        newTvSeriesLoadResponse(title, url, TvType.Anime, episodeLinks) {
-            this.posterUrl = poster
-            this.plot = description
-            this.tags = tags
-            this.recommendations = recs
-        }
-    } else {
-        newMovieLoadResponse(title, url, TvType.Movie, url) {
-            this.posterUrl = poster
-            this.plot = description
-            this.tags = tags
-            this.recommendations = recs
+        } else {
+            newMovieLoadResponse(title, url, TvType.Movie, url) {
+                this.posterUrl = poster
+                this.plot = description
+                this.tags = tags
+                this.recommendations = recommendations
+                if (score != null) addScore(score.toString(), 10)
+            }
         }
     }
-}
 
+    override suspend fun loadLinks(
+        data: String,
+        isCasting: Boolean,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
+    ): Boolean {
+        val document = app.get(data).document
+        var found = false
+        val seen = hashSetOf<String>()
 
+        suspend fun loadUrl(url: String?) {
+            val raw = url?.trim().orEmpty()
+            if (raw.isBlank()) return
+            val fixed = httpsify(raw)
+            if (!seen.add(fixed)) return
+            found = true
+            loadExtractor(fixed, data, subtitleCallback, callback)
+        }
+
+        suspend fun addDirect(url: String?, sourceName: String, quality: String? = null) {
+            val raw = url?.trim().orEmpty()
+            if (raw.isBlank()) return
+            val fixed = fixUrl(raw)
+            if (!seen.add(fixed)) return
+            found = true
+            callback(
+                newExtractorLink(sourceName, sourceName, fixed, INFER_TYPE) {
+                    this.quality = quality?.let { getQualityFromName(it) } ?: Qualities.Unknown.value
+                    this.headers = mapOf("Referer" to data)
+                }
+            )
+        }
+
+        for (frame in document.select(".movieplay .pframe iframe, .player-embed iframe, .movieplay iframe, #embed_holder iframe")) {
+            loadUrl(frame.getIframeAttr())
+        }
+
+        val ajaxUrl = "$mainUrl/wp-admin/admin-ajax.php"
+        for (option in document.select(".east_player_option[data-post][data-nume][data-type]")) {
+            val post = option.attr("data-post").trim()
+            val nume = option.attr("data-nume").trim()
+            val type = option.attr("data-type").trim()
+            val server = option.text().trim().ifBlank { "Server $nume" }
+            if (post.isBlank() || nume.isBlank() || type.isBlank()) continue
+
+            runCatching {
+                app.post(
+                    ajaxUrl,
+                    data = mapOf(
+                        "action" to "player_ajax",
+                        "post" to post,
+                        "nume" to nume,
+                        "type" to type
+                    ),
+                    headers = mapOf("X-Requested-With" to "XMLHttpRequest", "Referer" to data)
+                ).text
+            }.getOrNull()?.let { body ->
+                val ajaxDoc = Jsoup.parse(body)
+
+                for (frame in ajaxDoc.select("iframe")) {
+                    loadUrl(frame.getIframeAttr())
+                }
+
+                for (source in ajaxDoc.select("video source[src]")) {
+                    addDirect(source.attr("src"), "$name $server", source.attr("size"))
+                }
+
+                for (a in ajaxDoc.select("a[href]")) {
+                    val href = a.attr("href")
+                    if (href.startsWith("http", true)) loadUrl(href)
+                }
+            }
+        }
+
+        for (a in document.select(".download-eps a[href], #downloadb a[href], .boxdownload a[href], .dlbox a[href]")) {
+            loadUrl(a.attr("href"))
+        }
+
+        return found
+    }
 
     private fun Element.getImageAttr(): String {
         return when {
