@@ -182,79 +182,7 @@ class Winbu : MainAPI() {
     }
 }
 
-override suspend fun loadLinks(
-    data: String,
-    isCasting: Boolean,
-    subtitleCallback: (SubtitleFile) -> Unit,
-    callback: (ExtractorLink) -> Unit
-): Boolean {
-    val document = app.get(data).document
-    var found = false
 
-    suspend fun handleExtractorUrl(url: String?) {
-        if (url.isNullOrBlank()) return
-        found = true
-        loadExtractor(httpsify(url), data, subtitleCallback, callback)
-    }
-
-    document.select(".player-embed iframe[src], .pframe iframe[src], #pembed iframe[src]")
-        .mapNotNull { it.getIframeAttr()?.trim() }
-        .distinct()
-        .forEach { iframe -> handleExtractorUrl(iframe) }
-
-
-    val serverOptions = document.select("#server .east_player_option[data-post][data-nume]")
-    if (serverOptions.isNotEmpty()) {
-        val ajaxUrl = "$mainUrl/wp-admin/admin-ajax.php"
-        val postId = serverOptions.first()?.attr("data-post")?.trim()
-
-        if (!postId.isNullOrBlank()) {
-            val actionCandidates = listOf(
-                "east_player_ajax",
-                "doo_player_ajax",
-                "player_ajax",
-                "player_ajax_request"
-            )
-
-            for (opt in serverOptions) {
-                val nume = opt.attr("data-nume").trim()
-                val type = opt.attr("data-type").trim().ifBlank { "schtml" }
-
-                var extracted: String? = null
-                for (action in actionCandidates) {
-                    try {
-                        val res = app.post(
-                            ajaxUrl,
-                            data = mapOf(
-                                "action" to action,
-                                "post" to postId,
-                                "nume" to nume,
-                                "type" to type
-                            )
-                        ).text
-
-                        val parsed = Jsoup.parse(res)
-
-                        parsed.selectFirst("iframe[src]")?.attr("src")?.trim()
-                            ?.takeIf { it.isNotBlank() }
-                            ?.let { extracted = it; break }
-
-                        parsed.selectFirst("source[src]")?.attr("src")?.trim()
-                            ?.takeIf { it.isNotBlank() }
-                            ?.let { extracted = it; break }
-
-                        Regex("""https?://[^\s'"]+""").find(res)?.value
-                            ?.takeIf { it.isNotBlank() }
-                            ?.let { extracted = it; break }
-                    } catch (_: Exception) { }
-                }
-
-                handleExtractorUrl(extracted)
-            }
-        }
-    }
-    return found
-}
 
     private fun Element.getImageAttr(): String {
         return when {
