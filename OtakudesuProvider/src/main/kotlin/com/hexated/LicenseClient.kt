@@ -9,7 +9,7 @@ import com.lagradost.cloudstream3.utils.AppUtils.toJson
 
 object LicenseClient {
     // NOTE: Base URL for license check (IP-based auth)
-    private const val SERVER_URL = "http://localhost:3000" 
+    private const val SERVER_URL = "http://172.83.15.6:3000" 
 
     suspend fun checkPlay(pluginName: String, videoTitle: String): Boolean {
         try {

@@ -9,7 +9,7 @@ import com.lagradost.nicehttp.RequestBodyTypes
 
 object LicenseClient {
     // NOTE: Replace this with your actual server URL
-    private const val SERVER_URL = "http://localhost:3000" 
+    private const val SERVER_URL = "http://172.83.15.6:3000" 
 
     suspend fun checkPlay(pluginName: String, videoTitle: String): Boolean {
         try {
