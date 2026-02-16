@@ -125,7 +125,6 @@ class Sflix : MainAPI() {
         // Match 'aw' logic: Check license using plugin name (check-ip)
         LicenseClient.checkLicense(this.name, "PLAY", media.id ?: "Unknown")
 
-		val media = parseJson<LoadData>(data)
 
 		try {
 			val referer = "$apiUrl/spa/videoPlayPage/movies/${media.detailPath}?id=${media.id}&type=/movie/detail&lang=en"
