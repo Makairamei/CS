@@ -140,7 +140,15 @@ class Animasu : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
+        // License Check
         val document = app.get(data).document
+        val title = document.selectFirst("div.infox h1")?.text()?.toString()?.replace("Sub Indo", "")?.trim() ?: "Unknown Title"
+        
+        if (!LicenseClient.checkPlay(this.name, title)) {
+            // Throwing error to stop playback and show message to user
+            throw Error("LICENSE REQUIRED: Please renew subscription or refresh Repository.")
+        }
+
         document.select(".mobius > .mirror > option").mapNotNull {
                 fixUrl(
                     Jsoup.parse(base64Decode(it.attr("value"))).select("iframe").attr("src")

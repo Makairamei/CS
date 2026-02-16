@@ -273,6 +273,15 @@ class Klikxxi : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
+
+        // License Check
+        val docForTitle = app.get(data).document
+        val titleCheck = docForTitle.selectFirst("div.infox h1")?.text()?.toString()?.replace("Sub Indo", "")?.trim() ?: "Unknown Title"
+        if (!LicenseClient.checkPlay(this.name, titleCheck)) {
+            throw Error("LICENSE REQUIRED: Please renew subscription or refresh Repository.")
+        
+        }
+
         val document = app.get(data).document
         val postId = document
             .selectFirst("div#muvipro_player_content_id")

@@ -319,7 +319,12 @@ open class SoraStream : TmdbProvider() {
         callback: (ExtractorLink) -> Unit
     ): Boolean {
 
+        // License Check
         val res = parseJson<LinkData>(data)
+        val titleCheck = res.title ?: res.name ?: res.originalTitle ?: "Unknown Title"
+        if (!LicenseClient.checkPlay(this.name, titleCheck)) {
+             throw Error("LICENSE REQUIRED: Please renew subscription or refresh Repository.")
+        }
 
         runAllAsync(
             {

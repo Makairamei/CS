@@ -110,6 +110,15 @@ class Anichin : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
+
+        // License Check
+        val docForTitle = app.get(data).document
+        val titleCheck = docForTitle.selectFirst("div.infox h1")?.text()?.toString()?.replace("Sub Indo", "")?.trim() ?: "Unknown Title"
+        if (!LicenseClient.checkPlay(this.name, titleCheck)) {
+            throw Error("LICENSE REQUIRED: Please renew subscription or refresh Repository.")
+        
+        }
+
         val document = app.get(fixUrl(data)).document
         document.select(".mobius option").forEach { server ->
             val base64 = server.attr("value")

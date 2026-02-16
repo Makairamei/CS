@@ -1,0 +1,35 @@
+package com.animasu
+
+import com.lagradost.cloudstream3.app
+import com.lagradost.cloudstream3.utils.AppUtils.toJson
+import org.json.JSONObject
+
+object LicenseClient {
+    // NOTE: Replace this with your actual server URL
+    private const val SERVER_URL = "http://localhost:3000" 
+
+    suspend fun checkPlay(pluginName: String, videoTitle: String): Boolean {
+        try {
+            // Using generic app.post from Cloudstream
+            // We rely on IP authentication on the server side
+            val response = app.post(
+                "$SERVER_URL/api/check-play",
+                contentType = "application/json",
+                data = mapOf(
+                    "plugin_name" to pluginName,
+                    "video_title" to videoTitle
+                )
+            )
+
+            if (response.code == 200) {
+                 val jsonResponse = JSONObject(response.text)
+                 return jsonResponse.optBoolean("allowed", false)
+            }
+            return false
+        } catch (e: Exception) {
+            e.printStackTrace()
+            // Fail open or closed? Strict mode = Fail closed (return false)
+            return false
+        }
+    }
+}
