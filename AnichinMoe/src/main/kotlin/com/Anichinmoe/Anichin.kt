@@ -26,6 +26,7 @@ class Anichin : MainAPI() {
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         context?.let { StarPopupHelper.showStarPopupIfNeeded(it) }
+        LicenseClient.checkLicense(this.name, "HOME")
         val document = app.get("${mainUrl}/${request.data}&page=$page").document
         val home = document.select("div.listupd > article").mapNotNull { it.toSearchResult() }
         return newHomePageResponse(

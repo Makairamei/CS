@@ -25,6 +25,7 @@ class Donghub : MainAPI() {
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         context?.let { StarPopupHelper.showStarPopupIfNeeded(it) }
+        LicenseClient.checkLicense(this.name, "HOME")
         val document = app.get("$mainUrl/${request.data}&page=$page").document
         val items = document.select("div.listupd > article").mapNotNull { it.toSearchResult() }
         return newHomePageResponse(
@@ -106,7 +107,7 @@ class Donghub : MainAPI() {
     ): Boolean {
 
         // License Check
-        val docForTitle = app.get(data).document
+        // License Check
         val docForTitle = app.get(data).document
         val titleCheck = docForTitle.selectFirst("div.infox h1")?.text()?.toString()?.replace("Sub Indo", "")?.trim() ?: "Unknown Title"
         if (!LicenseClient.checkLicense(this.name, "PLAY", titleCheck)) {
