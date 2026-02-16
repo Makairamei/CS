@@ -60,9 +60,7 @@ subprojects {
         }
 
 
-        buildFeatures {
-            buildConfig = true
-        }
+        buildFeatures.buildConfig = true
 
         tasks.withType<KotlinJvmCompile> {
             compilerOptions {
