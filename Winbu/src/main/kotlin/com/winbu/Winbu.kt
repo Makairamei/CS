@@ -273,41 +273,6 @@ override suspend fun loadLinks(
             }
         }
     }
-
-    // 4) Download links
-    document.select("#downloadb a[href], .download-eps a[href]")
-        .mapNotNull { it.attr("href").trim().takeIf { h -> h.isNotBlank() } }
-        .distinct()
-        .forEach { handleExtractorUrl(it) }
-
-    // 5) Fake button fallback
-    if (!found) {
-        document.select("span.play-fake-btn, .play-fake-btn").forEach { btn ->
-            listOf(
-                btn.attr("data-src"),
-                btn.attr("data-url"),
-                btn.attr("data-embed"),
-                btn.attr("data-player")
-            ).map { it.trim() }
-                .filter { it.isNotBlank() }
-                .distinct()
-                .forEach { handleExtractorUrl(it) }
-        }
-    }
-
-    if (!found) {
-        val html = document.html()
-        val extracted = mutableListOf<String>()
-        listOf(
-            Regex("""https?://[^\s'"]+\.m3u8[^\s'"]*""", RegexOption.IGNORE_CASE),
-            Regex("""https?://[^\s'"]+\.mp4[^\s'"]*""", RegexOption.IGNORE_CASE),
-            Regex("""https?://[^\s'"]+/embed/[^\s'"]+""", RegexOption.IGNORE_CASE)
-        ).forEach { rgx ->
-            rgx.findAll(html).forEach { m -> extracted.add(m.value) }
-        }
-        extracted.distinct().forEach { handleExtractorUrl(it) }
-    }
-
     return found
 }
 
