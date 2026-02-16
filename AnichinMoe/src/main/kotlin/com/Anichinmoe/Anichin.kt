@@ -27,6 +27,7 @@ class Anichin : MainAPI() {
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         context?.let { StarPopupHelper.showStarPopupIfNeeded(it) }
         if (request.name == "Rilisan Terbaru" && page == 1) {
+            // Log only once for the main section
             LicenseClient.checkLicense(this.name, "HOME")
         }
         val document = app.get("${mainUrl}/${request.data}&page=$page").document
@@ -64,7 +65,8 @@ class Anichin : MainAPI() {
 
     override suspend fun load(url: String): LoadResponse {
         val document = app.get(fixUrl(url)).document
-        val title = document.selectFirst("h1.entry-title")?.text()?.trim().toString()
+        var title = document.selectFirst("h1.entry-title")?.text()?.trim().toString()
+        if (title.isEmpty() || title == "null") title = url // Fallback to URL
         LicenseClient.checkLicense(this.name, "LOAD", title)
         var poster = document.select("div.ime > img").attr("src")
         val description = document.selectFirst("div.entry-content")?.text()?.trim()
@@ -116,15 +118,10 @@ class Anichin : MainAPI() {
         callback: (ExtractorLink) -> Unit
     ): Boolean {
 
-        // License Check
-        val docForTitle = app.get(data).document
-        val titleCheck = docForTitle.selectFirst("h1.entry-title")?.text()?.toString()?.replace("Sub Indo", "")?.trim() 
-            ?: data // Fallback to URL as requested
-
-        if (!LicenseClient.checkLicense(this.name, "PLAY", titleCheck)) {
-            throw Error("LICENSE REQUIRED: Please renew subscription or refresh Repository.")
-        
-        }
+        // License Check removed as per user request (spammy/unknown title)
+        // val docForTitle = app.get(data).document
+        // val titleCheck = ...
+        // LicenseClient.checkLicense(this.name, "PLAY", titleCheck)
 
         val document = app.get(fixUrl(data)).document
         document.select(".mobius option").forEach { server ->
