@@ -1,34 +1,65 @@
 package com.ngefilm
 
 import com.lagradost.cloudstream3.app
-import org.json.JSONObject
-import okhttp3.MediaType.Companion.toMediaTypeOrNull
-import okhttp3.RequestBody.Companion.toRequestBody
-import com.lagradost.nicehttp.RequestBodyTypes
-import com.lagradost.cloudstream3.utils.AppUtils.toJson
+import com.lagradost.cloudstream3.ErrorLoadingException
+import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 
 object LicenseClient {
-    // NOTE: Replace this with your actual server URL or ensure it's configured correctly
-    private const val SERVER_URL = com.excloud.BuildConfig.LICENSE_SERVER_URL 
+    // Hardcoded as requested to sync with 'aw' logic
+    private const val SERVER_URL = "http://172.83.15.6:3000"
+    
+    private var cachedStatus: String? = null
+    private var cacheTime: Long = 0
+    private const val CACHE_MS = 60 * 1000L // 1 minute cache
 
-    suspend fun checkPlay(pluginName: String, videoTitle: String): Boolean {
+    data class LicenseResponse(
+        @com.fasterxml.jackson.annotation.JsonProperty("status") val status: String = "",
+        @com.fasterxml.jackson.annotation.JsonProperty("message") val message: String = ""
+    )
+
+    suspend fun checkLicense(pluginName: String): Boolean {
+        // Cache Check
+        if (cachedStatus == "active" && System.currentTimeMillis() - cacheTime < CACHE_MS) return true
+
         try {
-                        val response = app.post(
-                "$SERVER_URL/api/check-play",
-                requestBody = mapOf(
-                    "plugin_name" to pluginName,
-                    "video_title" to videoTitle
-                ).toJson().toRequestBody(RequestBodyTypes.JSON.toMediaTypeOrNull())
+            val response = app.get(
+                "$SERVER_URL/api/check-ip?plugin=$pluginName",
+                timeout = 10
             )
 
-            if (response.code == 200) {
-                 val jsonResponse = JSONObject(response.text)
-                 return jsonResponse.optBoolean("allowed", false)
+            val json = tryParseJson<LicenseResponse>(response.text)
+
+            if (json == null) {
+                cachedStatus = null
+                // Fail CLOSED (Strict Mode)
+                throw ErrorLoadingException("LICENSE ERROR: Gagal koneksi ke server lisensi. Cek Internet/Firewall.")
             }
-            return false
+
+            if (json.status != "active") {
+                cachedStatus = null
+                val msg = json.message
+                if (msg.contains("IP belum terdaftar")) {
+                    throw ErrorLoadingException("Akses Ditolak: Silakan REFRESH Repository Anda untuk aktivasi ulang.")
+                }
+                throw ErrorLoadingException("BLOCKED: $msg")
+            }
+
+            cachedStatus = "active"
+            cacheTime = System.currentTimeMillis()
+            return true
+
         } catch (e: Exception) {
+            cachedStatus = null
+            if (e is ErrorLoadingException) throw e
             e.printStackTrace()
-            return false
+            // Fail CLOSED
+            throw ErrorLoadingException("License Check Failed: " + e.message)
         }
+    }
+
+    // Keep checkPlay for backward compatibility if plugins usage it, 
+    // but redirect to checkLicense internally or just use checkLicense logic
+    suspend fun checkPlay(pluginName: String, videoTitle: String): Boolean {
+        return checkLicense(pluginName)
     }
 }

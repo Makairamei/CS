@@ -5,7 +5,7 @@ import com.lagradost.cloudstream3.ErrorLoadingException
 import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 
 object LicenseClient {
-    // Hardcoded as requested
+    // Hardcoded as requested to sync with 'aw' logic
     private const val SERVER_URL = "http://172.83.15.6:3000"
     
     private var cachedStatus: String? = null
@@ -53,7 +53,13 @@ object LicenseClient {
             if (e is ErrorLoadingException) throw e
             e.printStackTrace()
             // Fail CLOSED
-            throw ErrorLoadingException("License Check Failed: ${e.message}")
+            throw ErrorLoadingException("License Check Failed: " + e.message)
         }
+    }
+
+    // Keep checkPlay for backward compatibility if plugins usage it, 
+    // but redirect to checkLicense internally or just use checkLicense logic
+    suspend fun checkPlay(pluginName: String, videoTitle: String): Boolean {
+        return checkLicense(pluginName)
     }
 }
