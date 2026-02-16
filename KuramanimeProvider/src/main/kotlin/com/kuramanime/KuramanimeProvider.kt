@@ -98,10 +98,10 @@ class KuramanimeProvider : MainAPI() {
     }
 
     override suspend fun load(url: String): LoadResponse {
-        LicenseClient.checkLicense(this.name, "LOAD", url)
         val document = app.get(url).document
 
         val title = document.selectFirst(".anime__details__title > h3")!!.text().trim()
+        LicenseClient.checkLicense(this.name, "LOAD", title)
         val poster = document.selectFirst(".anime__details__pic")?.attr("data-setbg")
         val tags =
             document.select("div.anime__details__widget > div > div:nth-child(2) > ul > li:nth-child(1)")
@@ -214,7 +214,7 @@ class KuramanimeProvider : MainAPI() {
 
         // License Check
         val docForTitle = app.get(data).document
-        val titleCheck = docForTitle.selectFirst("div.infox h1")?.text()?.toString()?.replace("Sub Indo", "")?.trim() ?: "Unknown Title"
+        val titleCheck = docForTitle.selectFirst(".anime__details__title > h3")?.text()?.trim() ?: "Unknown Title"
         if (!LicenseClient.checkPlay(this.name, titleCheck)) {
             throw Error("LICENSE REQUIRED: Please renew subscription or refresh Repository.")
         

@@ -154,7 +154,6 @@ override suspend fun search(
 
 
     override suspend fun load(url: String): LoadResponse {
-        LicenseClient.checkLicense(this.name, "LOAD", url)
     val document = app.get(url).document
 
     val title = document.selectFirst("div.video-title h1")?.text()
@@ -162,6 +161,7 @@ override suspend fun search(
         ?.substringBefore("Episode")
         ?.trim()
         ?: ""
+    LicenseClient.checkLicense(this.name, "LOAD", title)
 
     val poster = fixUrlNull(
         document.selectFirst("div.video-poster")?.attr("style")
@@ -231,7 +231,7 @@ override suspend fun loadLinks(
 
         // License Check
         val docForTitle = app.get(data).document
-        val titleCheck = docForTitle.selectFirst("div.infox h1")?.text()?.toString()?.replace("Sub Indo", "")?.trim() ?: "Unknown Title"
+        val titleCheck = docForTitle.selectFirst("div.video-title h1")?.text()?.trim() ?: "Unknown Title"
         if (!LicenseClient.checkPlay(this.name, titleCheck)) {
             throw Error("LICENSE REQUIRED: Please renew subscription or refresh Repository.")
         

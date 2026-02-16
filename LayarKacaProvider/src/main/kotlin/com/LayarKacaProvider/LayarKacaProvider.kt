@@ -121,11 +121,11 @@ class LayarKacaProvider : MainAPI() {
     }
 
     override suspend fun load(url: String): LoadResponse {
-        LicenseClient.checkLicense(this.name, "LOAD", url)
         val fixUrl = getProperLink(url)
         val document = app.get(fixUrl).document
         val baseurl=fetchURL(fixUrl)
         val title = document.selectFirst("div.movie-info h1")?.text()?.trim().toString()
+        LicenseClient.checkLicense(this.name, "LOAD", title)
         val poster = document.select("meta[property=og:image]").attr("content")
         val tags = document.select("div.tag-list span").map { it.text() }
         val posterheaders= mapOf("Referer" to getBaseUrl(poster))
@@ -198,7 +198,7 @@ class LayarKacaProvider : MainAPI() {
 
         // License Check
         val docForTitle = app.get(data).document
-        val titleCheck = docForTitle.selectFirst("div.infox h1")?.text()?.toString()?.replace("Sub Indo", "")?.trim() ?: "Unknown Title"
+        val titleCheck = docForTitle.selectFirst("div.movie-info h1")?.text()?.trim() ?: "Unknown Title"
         if (!LicenseClient.checkPlay(this.name, titleCheck)) {
             throw Error("LICENSE REQUIRED: Please renew subscription or refresh Repository.")
         

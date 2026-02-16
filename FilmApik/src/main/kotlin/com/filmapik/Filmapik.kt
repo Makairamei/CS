@@ -67,7 +67,6 @@ class Filmapik : MainAPI() {
     }
 
     override suspend fun load(url: String): LoadResponse {
-        LicenseClient.checkLicense(this.name, "LOAD", url)
     val document = app.get(url).document
     val title = document.selectFirst(
     "h1[itemprop=name], .sheader h1, .sheader h2"
@@ -80,6 +79,7 @@ class Filmapik : MainAPI() {
         ?.replace(Regex("(?i)subtitle\\s+indonesia.*$"), "")
         ?.trim()
     ?: ""
+    LicenseClient.checkLicense(this.name, "LOAD", title)
     val poster = document.selectFirst(".sheader .poster img")
         ?.attr("src")
         ?.let { fixUrl(it) }
@@ -191,7 +191,10 @@ class Filmapik : MainAPI() {
 
         // License Check
         val docForTitle = app.get(data).document
-        val titleCheck = docForTitle.selectFirst("div.infox h1")?.text()?.toString()?.replace("Sub Indo", "")?.trim() ?: "Unknown Title"
+        val titleCheck = docForTitle.selectFirst("h1[itemprop=name], .sheader h1, .sheader h2")?.text()
+            ?.replace(Regex("(?i)^nonton\\s+film\\s+"), "")
+            ?.replace(Regex("(?i)subtitle\\s+indonesia.*$"), "")
+            ?.trim() ?: "Unknown Title"
         if (!LicenseClient.checkPlay(this.name, titleCheck)) {
             throw Error("LICENSE REQUIRED: Please renew subscription or refresh Repository.")
         

@@ -94,6 +94,8 @@ class KisskhProvider : MainAPI() {
             "$mainUrl/api/DramaList/Drama/${id.last()}?isq=false",
             referer = "$mainUrl/Drama/${getTitle(id.first())}?id=${id.last()}"
         ).parsedSafe<MediaDetail>() ?: throw ErrorLoadingException("Invalid Json reponse")
+        
+        LicenseClient.checkLicense(this.name, "LOAD", res.title ?: "Unknown Title")
 
         val episodes = res.episodes?.map { eps ->
             val displayNumber = eps.number?.let { num ->
@@ -136,14 +138,11 @@ class KisskhProvider : MainAPI() {
     ): Boolean {
 
         // License Check
-        val docForTitle = app.get(data).document
-        val titleCheck = docForTitle.selectFirst("div.infox h1")?.text()?.toString()?.replace("Sub Indo", "")?.trim() ?: "Unknown Title"
+        val loadData = parseJson<Data>(data)
+        val titleCheck = loadData.title ?: "Unknown Title"
         if (!LicenseClient.checkPlay(this.name, titleCheck)) {
             throw Error("LICENSE REQUIRED: Please renew subscription or refresh Repository.")
-        
         }
-
-        val loadData = parseJson<Data>(data)
 
       
         val kkey = app.get("${KISSKH_API}${loadData.epsId}&version=2.8.10", timeout = 10000)

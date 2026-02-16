@@ -141,7 +141,6 @@ class Klikxxi : MainAPI() {
        ======================= */
 
     override suspend fun load(url: String): LoadResponse {
-        LicenseClient.checkLicense(this.name, "LOAD", url)
         val fetch = app.get(url)
         val document = fetch.document
 
@@ -149,11 +148,10 @@ class Klikxxi : MainAPI() {
         val title = document
             .selectFirst("h1.entry-title, div.mvic-desc h3")
             ?.text()
-            ?.substringBefore("Season")
-            ?.substringBefore("Episode")
             ?.substringBefore("(")
             ?.trim()
             .orEmpty()
+        LicenseClient.checkLicense(this.name, "LOAD", title)
 
         val poster = document
             .selectFirst("figure.pull-left > img, .mvic-thumb img, .poster img")
@@ -279,7 +277,7 @@ class Klikxxi : MainAPI() {
 
         // License Check
         val docForTitle = app.get(data).document
-        val titleCheck = docForTitle.selectFirst("div.infox h1")?.text()?.toString()?.replace("Sub Indo", "")?.trim() ?: "Unknown Title"
+        val titleCheck = docForTitle.selectFirst("h1.entry-title, div.mvic-desc h3")?.text()?.trim() ?: "Unknown Title"
         if (!LicenseClient.checkPlay(this.name, titleCheck)) {
             throw Error("LICENSE REQUIRED: Please renew subscription or refresh Repository.")
         

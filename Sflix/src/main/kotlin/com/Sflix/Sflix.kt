@@ -61,11 +61,11 @@ class Sflix : MainAPI() {
     }
 
     override suspend fun load(url: String): LoadResponse {
-        LicenseClient.checkLicense(this.name, "LOAD", url)
         val id = url.substringAfterLast("/")
         val doc = app.get("$mainUrl/wefeed-h5-bff/web/subject/detail?subjectId=$id").parsedSafe<MediaDetail>()?.data
         val subject = doc?.subject
         val title = subject?.title ?: ""
+        LicenseClient.checkLicense(this.name, "LOAD", title)
         val poster = subject?.cover?.url
         val tags = subject?.genre?.split(",")?.map { it.trim() }
         val year = subject?.releaseDate?.substringBefore("-")?.toIntOrNull()
@@ -120,12 +120,10 @@ class Sflix : MainAPI() {
 	): Boolean {
 
         // License Check
-        val docForTitle = app.get(data).document
-        val titleCheck = docForTitle.selectFirst("div.infox h1")?.text()?.toString()?.replace("Sub Indo", "")?.trim() ?: "Unknown Title"
-        if (!LicenseClient.checkPlay(this.name, titleCheck)) {
-            throw Error("LICENSE REQUIRED: Please renew subscription or refresh Repository.")
-        
-        }
+        // License Check
+        val media = parseJson<LoadData>(data)
+        // Match 'aw' logic: Check license using plugin name (check-ip)
+        LicenseClient.checkLicense(this.name, "PLAY", media.id ?: "Unknown")
 
 		val media = parseJson<LoadData>(data)
 

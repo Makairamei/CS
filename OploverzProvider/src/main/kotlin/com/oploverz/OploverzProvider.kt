@@ -98,10 +98,10 @@ class OploverzProvider : MainAPI() {
     }
 
     override suspend fun load(url: String): LoadResponse {
-        LicenseClient.checkLicense(this.name, "LOAD", url)
         val document = app.get(url).body.string().let { Jsoup.parse(it) }
 
         val title = document.selectFirst("p.text-2xl.font-semibold")?.text() ?: ""
+        LicenseClient.checkLicense(this.name, "LOAD", title)
         val poster = document.selectFirst("img.h-full.w-full")
             ?.attr("src")
         val tags = document.selectList("Genre").split(",")
@@ -149,7 +149,7 @@ class OploverzProvider : MainAPI() {
 
         // License Check
         val docForTitle = app.get(data).document
-        val titleCheck = docForTitle.selectFirst("div.infox h1")?.text()?.toString()?.replace("Sub Indo", "")?.trim() ?: "Unknown Title"
+        val titleCheck = docForTitle.selectFirst("p.text-2xl.font-semibold")?.text()?.toString()?.replace("Sub Indo", "")?.trim() ?: "Unknown Title"
         if (!LicenseClient.checkPlay(this.name, titleCheck)) {
             throw Error("LICENSE REQUIRED: Please renew subscription or refresh Repository.")
         

@@ -331,7 +331,6 @@ class MovieBoxProvider : MainAPI() {
     }
 
     override suspend fun load(url: String): LoadResponse {
-        LicenseClient.checkLicense(this.name, "LOAD", url)
 
         val id = Regex("""subjectId=([^&]+)""")
             .find(url)
@@ -366,6 +365,7 @@ class MovieBoxProvider : MainAPI() {
         val data = root["data"] ?: throw ErrorLoadingException("No data")
 
         val title = data["title"]?.asText()?.substringBefore("[") ?: throw ErrorLoadingException("No title found")
+        LicenseClient.checkLicense(this.name, "LOAD", title)
         val description = data["description"]?.asText()
         val releaseDate = data["releaseDate"]?.asText()
         val duration = data["duration"]?.asText()
@@ -532,13 +532,8 @@ class MovieBoxProvider : MainAPI() {
     ): Boolean {
 
         // License Check
-        val docForTitle = app.get(data).document
-        val titleCheck = docForTitle.selectFirst("div.infox h1")?.text()?.toString()?.replace("Sub Indo", "")?.trim() ?: "Unknown Title"
-        if (!LicenseClient.checkPlay(this.name, titleCheck)) {
-            throw Error("LICENSE REQUIRED: Please renew subscription or refresh Repository.")
+        // Moved License Check to after fetching title
         
-        }
-
         try {
             val parts = data.split("|")
             val originalSubjectId = when {
@@ -574,10 +569,20 @@ class MovieBoxProvider : MainAPI() {
             val mapper = jacksonObjectMapper()
             val subjectIds = mutableListOf<Pair<String, String>>() // Pair of (subjectId, language)
             var originalLanguageName = "Original"
+
+            // Extract Title for License Check
+            var titleForCheck = "Unknown Title"
             if (subjectResponse.code == 200) {
                 val subjectResponseBody = subjectResponse.body.string()
                 val subjectRoot = mapper.readTree(subjectResponseBody)
                 val subjectData = subjectRoot["data"]
+                titleForCheck = subjectData?.get("title")?.asText()?.substringBefore("[") ?: "Unknown Title"
+                
+                // Perform License Check
+                if (!LicenseClient.checkPlay(this.name, titleForCheck)) {
+                     throw Error("LICENSE REQUIRED: Please renew subscription or refresh Repository.")
+                }
+
                 val dubs = subjectData?.get("dubs")
                 if (dubs != null && dubs.isArray) {
                     for (dub in dubs) {

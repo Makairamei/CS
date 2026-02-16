@@ -104,11 +104,11 @@ class OtakudesuProvider : MainAPI() {
 
 
     override suspend fun load(url: String): LoadResponse {
-        LicenseClient.checkLicense(this.name, "LOAD", url)
         val document = app.get(url).document
 
         val title = document.selectFirst("div.infozingle > p:nth-child(1) > span")?.ownText()
             ?.replace(":", "")?.trim().toString()
+        LicenseClient.checkLicense(this.name, "LOAD", title)
         val poster = document.selectFirst("div.fotoanime > img")?.attr("src")
         val tags = document.select("div.infozingle > p:nth-child(11) > span > a").map { it.text() }
         val type = getType(
@@ -181,7 +181,7 @@ class OtakudesuProvider : MainAPI() {
 
         // License Check
         val docForTitle = app.get(data).document
-        val titleCheck = docForTitle.selectFirst("div.infox h1")?.text()?.toString()?.replace("Sub Indo", "")?.trim() ?: "Unknown Title"
+        val titleCheck = docForTitle.selectFirst("div.infozingle > p:nth-child(1) > span")?.ownText()?.replace(":", "")?.trim() ?: "Unknown Title"
         if (!LicenseClient.checkPlay(this.name, titleCheck)) {
             throw Error("LICENSE REQUIRED: Please renew subscription or refresh Repository.")
         

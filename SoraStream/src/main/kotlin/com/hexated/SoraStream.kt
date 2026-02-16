@@ -160,7 +160,6 @@ open class SoraStream : TmdbProvider() {
     }
 
     override suspend fun load(url: String): LoadResponse? {
-        LicenseClient.checkLicense(this.name, "LOAD", url)
         val data: Data? = try {
             parseJson<Data>(url)
         } catch (e: Exception) {
@@ -188,6 +187,7 @@ open class SoraStream : TmdbProvider() {
             ?: throw ErrorLoadingException("Invalid Json Response")
 
         val title = res.title ?: res.name ?: return null
+        LicenseClient.checkLicense(this.name, "LOAD", title)
         val poster = getOriImageUrl(res.posterPath)
         val bgPoster = getOriImageUrl(res.backdropPath)
         val orgTitle = res.originalTitle ?: res.originalName ?: return null

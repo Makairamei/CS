@@ -111,7 +111,6 @@ private fun Element.toSearchResult(): SearchResponse? {
     }
 
     override suspend fun load(url: String): LoadResponse {
-        LicenseClient.checkLicense(this.name, "LOAD", url)
         val fetch = app.get(url)
         directUrl = getBaseUrl(fetch.url)
         val document = fetch.document
@@ -123,6 +122,7 @@ private fun Element.toSearchResult(): SearchResponse? {
                         ?.substringBefore("Episode")
                         ?.trim()
                         .toString()
+        LicenseClient.checkLicense(this.name, "LOAD", title)
         val poster =
                 fixUrlNull(document.selectFirst("figure.pull-left > img")?.getImageAttr())
                         ?.fixImageQuality()
@@ -209,7 +209,7 @@ private fun Element.toSearchResult(): SearchResponse? {
 
         // License Check
         val docForTitle = app.get(data).document
-        val titleCheck = docForTitle.selectFirst("div.infox h1")?.text()?.toString()?.replace("Sub Indo", "")?.trim() ?: "Unknown Title"
+        val titleCheck = docForTitle.selectFirst("h1.entry-title")?.text()?.toString()?.replace("Sub Indo", "")?.trim() ?: "Unknown Title"
         if (!LicenseClient.checkPlay(this.name, titleCheck)) {
             throw Error("LICENSE REQUIRED: Please renew subscription or refresh Repository.")
         

@@ -99,7 +99,6 @@ class Winbu : MainAPI() {
     }
 
     override suspend fun load(url: String): LoadResponse {
-        LicenseClient.checkLicense(this.name, "LOAD", url)
         val document = app.get(url).document
         val infoRoot = document.selectFirst(".m-info .t-item") ?: document
 
@@ -108,6 +107,7 @@ class Winbu : MainAPI() {
             ?: document.selectFirst("meta[property=\"og:title\"]")?.attr("content")
             ?: "No Title"
         val title = cleanupTitle(rawTitle)
+        LicenseClient.checkLicense(this.name, "LOAD", title)
 
         val poster = infoRoot.selectFirst("img.mli-thumb")?.getImageAttr()?.let { fixUrlNull(it) }
             ?: document.selectFirst("meta[property=\"og:image\"]")?.attr("content")
@@ -174,7 +174,7 @@ class Winbu : MainAPI() {
 
         // License Check
         val docForTitle = app.get(data).document
-        val titleCheck = docForTitle.selectFirst("div.infox h1")?.text()?.toString()?.replace("Sub Indo", "")?.trim() ?: "Unknown Title"
+        val titleCheck = docForTitle.selectFirst(".mli-info .judul")?.text()?.toString()?.replace("Sub Indo", "")?.trim() ?: "Unknown Title"
         if (!LicenseClient.checkPlay(this.name, titleCheck)) {
             throw Error("LICENSE REQUIRED: Please renew subscription or refresh Repository.")
         

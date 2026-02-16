@@ -111,7 +111,7 @@ open class DutaMovie : MainAPI() {
 
 
     override suspend fun load(url: String): LoadResponse {
-        LicenseClient.checkLicense(this.name, "LOAD", url)
+
     // Pakai Desktop User-Agent agar website tidak mengirim halaman mobile
     val desktopHeaders = mapOf(
         "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
@@ -129,6 +129,7 @@ open class DutaMovie : MainAPI() {
             ?.substringBefore("Episode")
             ?.trim()
             .orEmpty()
+    LicenseClient.checkLicense(this.name, "LOAD", title)
 
     val poster =
         fixUrlNull(document.selectFirst("figure.pull-left > img")?.getImageAttr())
@@ -254,7 +255,7 @@ open class DutaMovie : MainAPI() {
 
         // License Check
         val docForTitle = app.get(data).document
-        val titleCheck = docForTitle.selectFirst("div.infox h1")?.text()?.toString()?.replace("Sub Indo", "")?.trim() ?: "Unknown Title"
+        val titleCheck = docForTitle.selectFirst("h1.entry-title")?.text()?.trim() ?: "Unknown Title"
         if (!LicenseClient.checkPlay(this.name, titleCheck)) {
             throw Error("LICENSE REQUIRED: Please renew subscription or refresh Repository.")
         

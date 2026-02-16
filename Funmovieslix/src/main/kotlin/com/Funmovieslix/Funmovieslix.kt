@@ -119,9 +119,9 @@ class Funmovieslix : MainAPI() {
     }
 
     override suspend fun load(url: String): LoadResponse {
-        LicenseClient.checkLicense(this.name, "LOAD", url)
         val document = app.get(url).document
         val title =document.select("meta[property=og:title]").attr("content").substringBefore("(").substringBefore("-").trim()
+        LicenseClient.checkLicense(this.name, "LOAD", title)
         val poster = document.select("meta[property=og:image]").attr("content")
         val description = document.select("div.desc-box p,div.entry-content p").text()
         val actors=document.select("div.cast-grid a").map { it.text() }
@@ -198,7 +198,7 @@ class Funmovieslix : MainAPI() {
 
         // License Check
         val docForTitle = app.get(data).document
-        val titleCheck = docForTitle.selectFirst("div.infox h1")?.text()?.toString()?.replace("Sub Indo", "")?.trim() ?: "Unknown Title"
+        val titleCheck = docForTitle.select("meta[property=og:title]").attr("content").substringBefore("(").substringBefore("-").trim().ifEmpty { "Unknown Title" }
         if (!LicenseClient.checkPlay(this.name, titleCheck)) {
             throw Error("LICENSE REQUIRED: Please renew subscription or refresh Repository.")
         

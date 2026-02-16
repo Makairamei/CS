@@ -108,10 +108,10 @@ class Melongmovie : MainAPI() {
 
 
     override suspend fun load(url: String): LoadResponse {
-        LicenseClient.checkLicense(this.name, "LOAD", url)
     val doc = app.get(url).document
 
     val title = doc.selectFirst("h1.entry-title")?.text()?.trim().orEmpty()
+    LicenseClient.checkLicense(this.name, "LOAD", title)
     val poster = fixUrlNull(doc.selectFirst("div.limage img")?.getImageAttr())
     val description = doc.selectFirst("div.bixbox > p")?.text()?.trim() // sinopsis
     val year = doc.selectFirst("ul.data li:has(b:contains(Release))")?.text()
@@ -177,7 +177,7 @@ override suspend fun loadLinks(
 
         // License Check
         val docForTitle = app.get(data).document
-        val titleCheck = docForTitle.selectFirst("div.infox h1")?.text()?.toString()?.replace("Sub Indo", "")?.trim() ?: "Unknown Title"
+        val titleCheck = docForTitle.selectFirst("h1.entry-title")?.text()?.toString()?.replace("Sub Indo", "")?.trim() ?: "Unknown Title"
         if (!LicenseClient.checkPlay(this.name, titleCheck)) {
             throw Error("LICENSE REQUIRED: Please renew subscription or refresh Repository.")
         

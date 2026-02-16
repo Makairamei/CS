@@ -94,11 +94,11 @@ class Kissasian : MainAPI() {
     }
 }
     override suspend fun load(url: String): LoadResponse {
-        LicenseClient.checkLicense(this.name, "LOAD", url)
     val document = app.get(url).document
 
     // Judul
     val title = document.selectFirst("h1.entry-title")?.text()?.trim().orEmpty()
+    LicenseClient.checkLicense(this.name, "LOAD", title)
 
     // Poster
     val poster = document.selectFirst("div.bigcontent img")?.getImageAttr()?.let { fixUrlNull(it) }
@@ -204,7 +204,7 @@ val episodes = episodeElements
 
         // License Check
         val docForTitle = app.get(data).document
-        val titleCheck = docForTitle.selectFirst("div.infox h1")?.text()?.toString()?.replace("Sub Indo", "")?.trim() ?: "Unknown Title"
+        val titleCheck = docForTitle.selectFirst("h1.entry-title")?.text()?.toString()?.replace("Sub Indo", "")?.trim() ?: "Unknown Title"
         if (!LicenseClient.checkPlay(this.name, titleCheck)) {
             throw Error("LICENSE REQUIRED: Please renew subscription or refresh Repository.")
         

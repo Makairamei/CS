@@ -70,10 +70,10 @@ class Pencurimovie : MainAPI() {
     }
 
     override suspend fun load(url: String): LoadResponse {
-        LicenseClient.checkLicense(this.name, "LOAD", url)
         val document = app.get(url, timeout = 50L).document
         val title =
             document.selectFirst("div.mvic-desc h3")?.text()?.trim().toString().substringBefore("(")
+        LicenseClient.checkLicense(this.name, "LOAD", title)
         val poster = document.select("meta[property=og:image]").attr("content").toString()
         val description = document.selectFirst("div.desc p.f-desc")?.text()?.trim()
         val tvtag = if (url.contains("series")) TvType.TvSeries else TvType.Movie
@@ -151,7 +151,7 @@ class Pencurimovie : MainAPI() {
 
         // License Check
         val docForTitle = app.get(data).document
-        val titleCheck = docForTitle.selectFirst("div.infox h1")?.text()?.toString()?.replace("Sub Indo", "")?.trim() ?: "Unknown Title"
+        val titleCheck = docForTitle.selectFirst("div.mvic-desc h3")?.text()?.toString()?.substringBefore("(")?.trim() ?: "Unknown Title"
         if (!LicenseClient.checkPlay(this.name, titleCheck)) {
             throw Error("LICENSE REQUIRED: Please renew subscription or refresh Repository.")
         

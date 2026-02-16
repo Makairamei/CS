@@ -120,6 +120,9 @@ class Samehadaku : MainAPI() {
             ?.text()
             ?.removeBloat()
             ?: return null
+        LicenseClient.checkLicense(this.name, "LOAD", title)
+
+        LicenseClient.checkLicense(this.name, "LOAD", title)
 
         val poster = document.selectFirst("div.thumb img")?.attr("src")
         val description = document.select("div.desc p").text()
@@ -192,7 +195,7 @@ class Samehadaku : MainAPI() {
 
         // License Check
         val docForTitle = app.get(data).document
-        val titleCheck = docForTitle.selectFirst("div.infox h1")?.text()?.toString()?.replace("Sub Indo", "")?.trim() ?: "Unknown Title"
+        val titleCheck = docForTitle.selectFirst("h1.entry-title")?.text()?.toString()?.removeBloat()?.trim() ?: "Unknown Title"
         if (!LicenseClient.checkPlay(this.name, titleCheck)) {
             throw Error("LICENSE REQUIRED: Please renew subscription or refresh Repository.")
         
