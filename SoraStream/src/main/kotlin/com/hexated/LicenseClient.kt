@@ -11,9 +11,23 @@ object LicenseClient {
     // NOTE: Replace this with your actual server URL or ensure it's configured correctly
     private const val SERVER_URL = com.excloud.BuildConfig.LICENSE_SERVER_URL 
 
+    suspend fun checkLicense(pluginName: String): Boolean {
+        try {
+            val response = app.get("$SERVER_URL/api/check-ip?plugin=$pluginName")
+            if (response.code == 200) {
+                 val jsonResponse = JSONObject(response.text)
+                 return jsonResponse.optBoolean("valid", false)
+            }
+            return false
+        } catch (e: Exception) {
+            e.printStackTrace()
+            return false
+        }
+    }
+
     suspend fun checkPlay(pluginName: String, videoTitle: String): Boolean {
         try {
-                        val response = app.post(
+            val response = app.post(
                 "$SERVER_URL/api/check-play",
                 requestBody = mapOf(
                     "plugin_name" to pluginName,
