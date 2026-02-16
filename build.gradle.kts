@@ -11,10 +11,10 @@ buildscript {
     }
 
     dependencies {
-        classpath("com.android.tools.build:gradle:8.13.2")
+        classpath("com.android.tools.build:gradle:8.2.0")
         // Use Cloudstream3 fork of the gradle plugin on JitPack.
         classpath("com.github.recloudstream:gradle:cce1b8d84d")
-        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:2.3.0")
+        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.21")
     }
 }
 
@@ -47,8 +47,8 @@ subprojects {
 
         defaultConfig {
             minSdk = 21
-            compileSdkVersion(36)
-            targetSdk = 36
+            compileSdkVersion(34)
+            targetSdk = 34
             
             val licenseUrl = project.properties["LICENSE_SERVER_URL"] as? String ?: "http://localhost:3000"
             buildConfigField("String", "LICENSE_SERVER_URL", "\"$licenseUrl\"")
