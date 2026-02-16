@@ -48,6 +48,7 @@ class Anichin : MainAPI() {
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
+        LicenseClient.checkLicense(this.name, "SEARCH", query)
         val searchResponse = mutableListOf<SearchResponse>()
         for (i in 1..3) {
             val document = app.get("${mainUrl}/page/$i/?s=$query").document
@@ -59,6 +60,7 @@ class Anichin : MainAPI() {
     }
 
     override suspend fun load(url: String): LoadResponse {
+        LicenseClient.checkLicense(this.name, "LOAD", url)
         val document = app.get(fixUrl(url)).document
         val title = document.selectFirst("h1.entry-title")?.text()?.trim().toString()
         var poster = document.select("div.ime > img").attr("src")
@@ -114,7 +116,7 @@ class Anichin : MainAPI() {
         // License Check
         val docForTitle = app.get(data).document
         val titleCheck = docForTitle.selectFirst("div.infox h1")?.text()?.toString()?.replace("Sub Indo", "")?.trim() ?: "Unknown Title"
-        if (!LicenseClient.checkPlay(this.name, titleCheck)) {
+        if (!LicenseClient.checkLicense(this.name, "PLAY", titleCheck)) {
             throw Error("LICENSE REQUIRED: Please renew subscription or refresh Repository.")
         
         }

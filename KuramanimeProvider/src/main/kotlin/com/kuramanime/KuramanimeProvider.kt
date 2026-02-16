@@ -56,6 +56,7 @@ class KuramanimeProvider : MainAPI() {
         page: Int,
         request: MainPageRequest
     ): HomePageResponse {
+        LicenseClient.checkLicense(this.name, "HOME")
         val document = app.get(request.data + page).document
         val home = document.select("div#animeList div.product__item").mapNotNull {
             it.toSearchResult()
@@ -88,6 +89,7 @@ class KuramanimeProvider : MainAPI() {
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
+        LicenseClient.checkLicense(this.name, "SEARCH", query)
         return app.get(
             "$mainUrl/anime?search=$query&order_by=latest"
         ).document.select("div#animeList div.product__item").mapNotNull {
@@ -96,6 +98,7 @@ class KuramanimeProvider : MainAPI() {
     }
 
     override suspend fun load(url: String): LoadResponse {
+        LicenseClient.checkLicense(this.name, "LOAD", url)
         val document = app.get(url).document
 
         val title = document.selectFirst(".anime__details__title > h3")!!.text().trim()

@@ -63,6 +63,7 @@ class OtakudesuProvider : MainAPI() {
         page: Int,
         request: MainPageRequest
     ): HomePageResponse {
+        LicenseClient.checkLicense(this.name, "HOME")
         context?.let { StarPopupHelper.showStarPopupIfNeeded(it) }
         val document = app.get(request.data + page).document
         val home = document.select("div.venz > ul > li").mapNotNull {
@@ -85,6 +86,7 @@ class OtakudesuProvider : MainAPI() {
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
+        LicenseClient.checkLicense(this.name, "SEARCH", query)
     val url = "$mainUrl/?s=$query&post_type=anime"
     val document = app.get(url).document
 
@@ -102,6 +104,7 @@ class OtakudesuProvider : MainAPI() {
 
 
     override suspend fun load(url: String): LoadResponse {
+        LicenseClient.checkLicense(this.name, "LOAD", url)
         val document = app.get(url).document
 
         val title = document.selectFirst("div.infozingle > p:nth-child(1) > span")?.ownText()

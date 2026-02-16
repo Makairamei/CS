@@ -38,6 +38,7 @@ class Samehadaku : MainAPI() {
         page: Int,
         request: MainPageRequest
     ): HomePageResponse {
+        LicenseClient.checkLicense(this.name, "HOME")
 
         context?.let { StarPopupHelper.showStarPopupIfNeeded(it) }
 
@@ -105,6 +106,7 @@ class Samehadaku : MainAPI() {
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
+        LicenseClient.checkLicense(this.name, "SEARCH", query)
         return app.get("$mainUrl/?s=$query")
             .document
             .select("div.animposx")

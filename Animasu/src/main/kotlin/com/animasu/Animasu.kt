@@ -53,6 +53,7 @@ class Animasu : MainAPI() {
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
+        LicenseClient.checkLicense(this.name, "HOME")
         val document = app.get("$mainUrl/pencarian/?${request.data}&halaman=$page").document
         val home = document.select("div.listupd div.bs").map {
             it.toSearchResult()
@@ -91,12 +92,14 @@ class Animasu : MainAPI() {
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
+        LicenseClient.checkLicense(this.name, "SEARCH", query)
         return app.get("$mainUrl/?s=$query").document.select("div.listupd div.bs").map {
             it.toSearchResult()
         }
     }
 
     override suspend fun load(url: String): LoadResponse {
+        LicenseClient.checkLicense(this.name, "LOAD", url)
         val document = app.get(url).document
 
         val title =

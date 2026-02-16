@@ -34,6 +34,7 @@ class Winbu : MainAPI() {
     }
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
+        LicenseClient.checkLicense(this.name, "HOME")
         val document = app.get(pagedUrl(request.data, page)).document
         val items = document.select("#movies .ml-item, .movies-list .ml-item")
             .mapNotNull { it.toSearchResult(request.name) }
@@ -82,6 +83,7 @@ class Winbu : MainAPI() {
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
+        LicenseClient.checkLicense(this.name, "SEARCH", query)
         val document = app.get("$mainUrl/?s=$query").document
         return document.select("#movies .ml-item, .movies-list .ml-item")
             .mapNotNull { it.toSearchResult("Series") }
@@ -97,6 +99,7 @@ class Winbu : MainAPI() {
     }
 
     override suspend fun load(url: String): LoadResponse {
+        LicenseClient.checkLicense(this.name, "LOAD", url)
         val document = app.get(url).document
         val infoRoot = document.selectFirst(".m-info .t-item") ?: document
 

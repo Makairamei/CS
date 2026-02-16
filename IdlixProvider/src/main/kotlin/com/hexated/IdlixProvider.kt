@@ -56,6 +56,7 @@ class IdlixProvider : MainAPI() {
         page: Int,
         request: MainPageRequest
     ): HomePageResponse {
+        LicenseClient.checkLicense(this.name, "HOME")
         context?.let { StarPopupHelper.showStarPopupIfNeeded(it) }
         val url = request.data.split("?")
         val nonPaged = request.name == "Featured" && page <= 1
@@ -135,6 +136,7 @@ class IdlixProvider : MainAPI() {
     }
 
     override suspend fun load(url: String): LoadResponse {
+        LicenseClient.checkLicense(this.name, "LOAD", url)
         val request = app.get(url)
         directUrl = getBaseUrl(request.url)
         val document = request.document

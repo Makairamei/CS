@@ -27,6 +27,7 @@ class Filmapik : MainAPI() {
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
+        LicenseClient.checkLicense(this.name, "HOME")
         context?.let { StarPopupHelper.showStarPopupIfNeeded(it) }
         val url = "$mainUrl/${request.data.format(page)}"
         val document = app.get(url).document
@@ -51,6 +52,7 @@ class Filmapik : MainAPI() {
 }
 
     override suspend fun search(query: String): List<SearchResponse> {
+        LicenseClient.checkLicense(this.name, "SEARCH", query)
         val document = app.get("$mainUrl?s=$query&post_type[]=post&post_type[]=tv").document
         return document.select("article.item").mapNotNull { it.toSearchResult() }
     }
@@ -65,6 +67,7 @@ class Filmapik : MainAPI() {
     }
 
     override suspend fun load(url: String): LoadResponse {
+        LicenseClient.checkLicense(this.name, "LOAD", url)
     val document = app.get(url).document
     val title = document.selectFirst(
     "h1[itemprop=name], .sheader h1, .sheader h2"

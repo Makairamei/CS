@@ -50,6 +50,7 @@ class Hidoristream : MainAPI() {
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
+        LicenseClient.checkLicense(this.name, "HOME")
         val url = "$mainUrl/${request.data}&page=$page"
         val document = app.get(url).document
         val items = document.select("div.listupd article.bs")
@@ -73,6 +74,7 @@ class Hidoristream : MainAPI() {
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
+        LicenseClient.checkLicense(this.name, "SEARCH", query)
         val document = app.get("$mainUrl/?s=$query").document
         return document.select("div.listupd article.bs")
             .mapNotNull { it.toSearchResult() }
@@ -92,6 +94,7 @@ class Hidoristream : MainAPI() {
     }
 
     override suspend fun load(url: String): LoadResponse {
+        LicenseClient.checkLicense(this.name, "LOAD", url)
         val document = app.get(url).document
 
         val title = document.selectFirst("h1.entry-title")

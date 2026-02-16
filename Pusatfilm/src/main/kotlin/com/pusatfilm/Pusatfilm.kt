@@ -73,6 +73,7 @@ class Pusatfilm : MainAPI() {
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
+        LicenseClient.checkLicense(this.name, "SEARCH", query)
         val document = app.get("$mainUrl/?s=$query&post_type[]=post&post_type[]=tv", timeout = 50L).document
         return document.select("article.item").mapNotNull { it.toSearchResult() }
     }
@@ -86,6 +87,7 @@ class Pusatfilm : MainAPI() {
 
 
     override suspend fun load(url: String): LoadResponse {
+        LicenseClient.checkLicense(this.name, "LOAD", url)
         val fetch = app.get(url)
         val document = fetch.document
 
@@ -165,7 +167,8 @@ class Pusatfilm : MainAPI() {
         // License Check
         val docForTitle = app.get(data).document
         val titleCheck = docForTitle.selectFirst("div.infox h1")?.text()?.toString()?.replace("Sub Indo", "")?.trim() ?: "Unknown Title"
-        if (!LicenseClient.checkPlay(this.name, titleCheck)) {
+        // Replace checkPlay with checkLicense(..., "PLAY")
+        if (!LicenseClient.checkLicense(this.name, "PLAY", titleCheck)) {
             throw Error("LICENSE REQUIRED: Please renew subscription or refresh Repository.")
         
         }

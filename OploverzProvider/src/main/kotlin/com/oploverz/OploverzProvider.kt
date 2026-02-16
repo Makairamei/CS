@@ -51,6 +51,7 @@ class OploverzProvider : MainAPI() {
         page: Int,
         request: MainPageRequest
     ): HomePageResponse {
+        LicenseClient.checkLicense(this.name, "HOME")
         val home = app.get("$backAPI/api/episodes?page=$page&pageSize=24&sort=${request.data}")
             .parsedSafe<Anime>()?.data?.map {
                 it.toSearchResult()
@@ -97,6 +98,7 @@ class OploverzProvider : MainAPI() {
     }
 
     override suspend fun load(url: String): LoadResponse {
+        LicenseClient.checkLicense(this.name, "LOAD", url)
         val document = app.get(url).body.string().let { Jsoup.parse(it) }
 
         val title = document.selectFirst("p.text-2xl.font-semibold")?.text() ?: ""

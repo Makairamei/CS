@@ -37,6 +37,7 @@ class Klikxxi : MainAPI() {
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
+        LicenseClient.checkLicense(this.name, "HOME")
     context?.let { StarPopupHelper.showStarPopupIfNeeded(it) }
     val url = if (page == 1) {
         // Hapus "page/%d/" dan biarkan jadi "tv/"
@@ -120,6 +121,7 @@ class Klikxxi : MainAPI() {
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
+        LicenseClient.checkLicense(this.name, "SEARCH", query)
         val document = app.get("$mainUrl/?s=$query", timeout = 50L).document
         return document.select("article.item").mapNotNull { it.toSearchResult() }
     }
@@ -139,6 +141,7 @@ class Klikxxi : MainAPI() {
        ======================= */
 
     override suspend fun load(url: String): LoadResponse {
+        LicenseClient.checkLicense(this.name, "LOAD", url)
         val fetch = app.get(url)
         val document = fetch.document
 

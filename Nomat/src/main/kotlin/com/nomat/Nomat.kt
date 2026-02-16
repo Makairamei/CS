@@ -38,6 +38,7 @@ class Nomat : MainAPI() {
 )
 
    override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
+        LicenseClient.checkLicense(this.name, "HOME")
     context?.let { StarPopupHelper.showStarPopupIfNeeded(it) }
     val url = "$mainUrl/${request.data}/$page/"
     val document = app.get(url).document
@@ -153,6 +154,7 @@ override suspend fun search(
 
 
     override suspend fun load(url: String): LoadResponse {
+        LicenseClient.checkLicense(this.name, "LOAD", url)
     val document = app.get(url).document
 
     val title = document.selectFirst("div.video-title h1")?.text()

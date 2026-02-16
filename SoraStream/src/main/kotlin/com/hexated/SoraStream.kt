@@ -152,6 +152,7 @@ open class SoraStream : TmdbProvider() {
     override suspend fun quickSearch(query: String): List<SearchResponse>? = search(query)
 
     override suspend fun search(query: String): List<SearchResponse>? {
+        LicenseClient.checkLicense(this.name, "SEARCH", query)
         return app.get("$tmdbAPI/search/multi?api_key=$apiKey&language=en-US&query=$query&page=1&include_adult=${settingsForProvider.enableAdult}")
             .parsedSafe<Results>()?.results?.mapNotNull { media ->
                 media.toSearchResponse()
@@ -159,10 +160,11 @@ open class SoraStream : TmdbProvider() {
     }
 
     override suspend fun load(url: String): LoadResponse? {
-    val data: Data? = try {
-        parseJson<Data>(url)
-    } catch (e: Exception) {
-        // fallback kalau ternyata string url (misalnya tmdb.org/...)
+        LicenseClient.checkLicense(this.name, "LOAD", url)
+        val data: Data? = try {
+            parseJson<Data>(url)
+        } catch (e: Exception) {
+            // fallback kalau ternyata string url (misalnya tmdb.org/...)
         if (url.startsWith("http")) {
             val id = url.substringAfterLast("/").toIntOrNull()
             val type = if (url.contains("/movie/")) "movie" else "tv"
@@ -326,7 +328,7 @@ open class SoraStream : TmdbProvider() {
         // License Check
         val res = parseJson<LinkData>(data)
         // Match 'aw' logic: Check license using plugin name (check-ip)
-        LicenseClient.checkLicense(this.name)
+        LicenseClient.checkLicense(this.name, "PLAY", res.title ?: "Unknown")
 
         runAllAsync(
             {

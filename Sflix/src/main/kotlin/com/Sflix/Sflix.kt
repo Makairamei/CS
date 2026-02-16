@@ -43,6 +43,7 @@ class Sflix : MainAPI() {
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
+        LicenseClient.checkLicense(this.name, "HOME")
         val url = "$mainUrl/wefeed-h5-bff/web/ranking-list/content?id=${request.data}&page=$page&perPage=12"
         val home = app.get(url).parsedSafe<Media>()?.data?.subjectList?.map { it.toSearchResponse(this) }
             ?: throw ErrorLoadingException("No Data Found")
@@ -52,6 +53,7 @@ class Sflix : MainAPI() {
     override suspend fun quickSearch(query: String): List<SearchResponse> = search(query)
 
     override suspend fun search(query: String): List<SearchResponse> {
+        LicenseClient.checkLicense(this.name, "SEARCH", query)
         val body = mapOf("keyword" to query, "page" to "1", "perPage" to "0", "subjectType" to "0")
             .toJson().toRequestBody(RequestBodyTypes.JSON.toMediaTypeOrNull())
         return app.post("$mainUrl/wefeed-h5-bff/web/subject/search", requestBody = body)
@@ -59,6 +61,7 @@ class Sflix : MainAPI() {
     }
 
     override suspend fun load(url: String): LoadResponse {
+        LicenseClient.checkLicense(this.name, "LOAD", url)
         val id = url.substringAfterLast("/")
         val doc = app.get("$mainUrl/wefeed-h5-bff/web/subject/detail?subjectId=$id").parsedSafe<MediaDetail>()?.data
         val subject = doc?.subject

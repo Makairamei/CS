@@ -42,6 +42,7 @@ class Melongmovie : MainAPI() {
     page: Int,
     request: MainPageRequest
 ): HomePageResponse {
+        LicenseClient.checkLicense(this.name, "HOME")
     context?.let { StarPopupHelper.showStarPopupIfNeeded(it) }
     val safePage = if (page <= 0) 1 else page
     val url = request.data.format(safePage)
@@ -85,6 +86,7 @@ class Melongmovie : MainAPI() {
 
 
     override suspend fun search(query: String): List<SearchResponse> {
+        LicenseClient.checkLicense(this.name, "SEARCH", query)
     val document = app.get("$mainUrl/?s=$query", timeout = 50L).document
     return document.select("div.los article.box")
         .mapNotNull { it.toSearchResult() }
@@ -106,6 +108,7 @@ class Melongmovie : MainAPI() {
 
 
     override suspend fun load(url: String): LoadResponse {
+        LicenseClient.checkLicense(this.name, "LOAD", url)
     val doc = app.get(url).document
 
     val title = doc.selectFirst("h1.entry-title")?.text()?.trim().orEmpty()

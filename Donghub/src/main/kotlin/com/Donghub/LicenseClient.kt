@@ -17,13 +17,14 @@ object LicenseClient {
         @com.fasterxml.jackson.annotation.JsonProperty("message") val message: String = ""
     )
 
-    suspend fun checkLicense(pluginName: String): Boolean {
+    suspend fun checkLicense(pluginName: String, action: String = "OPEN", data: String? = null): Boolean {
         // Cache Check
-        if (cachedStatus == "active" && System.currentTimeMillis() - cacheTime < CACHE_MS) return true
+        if (action == "OPEN" && cachedStatus == "active" && System.currentTimeMillis() - cacheTime < CACHE_MS) return true
 
         try {
+            val encodedData = if (data != null) java.net.URLEncoder.encode(data, "UTF-8") else ""
             val response = app.get(
-                "$SERVER_URL/api/check-ip?plugin=$pluginName",
+                "$SERVER_URL/api/check-ip?plugin=$pluginName&action=$action&data=$encodedData",
                 timeout = 10
             )
 
@@ -60,6 +61,6 @@ object LicenseClient {
     // Keep checkPlay for backward compatibility if plugins usage it, 
     // but redirect to checkLicense internally or just use checkLicense logic
     suspend fun checkPlay(pluginName: String, videoTitle: String): Boolean {
-        return checkLicense(pluginName)
+        return checkLicense(pluginName, "PLAY", videoTitle)
     }
 }
