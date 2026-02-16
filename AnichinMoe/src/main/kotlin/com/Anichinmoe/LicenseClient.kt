@@ -18,7 +18,17 @@ object LicenseClient {
         @com.fasterxml.jackson.annotation.JsonProperty("message") val message: String = ""
     )
 
+    private val lastCheckTime = mutableMapOf<String, Long>()
+
     suspend fun checkLicense(pluginName: String, action: String = "OPEN", data: String? = null): Boolean {
+        // Debounce HOME Check (Max 1 check per 60 seconds per plugin)
+        if (action == "HOME") {
+            val key = "$pluginName|$action"
+            val now = System.currentTimeMillis()
+            if (now - (lastCheckTime[key] ?: 0L) < 60000L) return true
+            lastCheckTime[key] = now
+        }
+        
         // Cache Check (Only for OPEN, and must match Plugin Name)
         if (action == "OPEN" && cachedStatus == "active" && cachedPlugin == pluginName && System.currentTimeMillis() - cacheTime < CACHE_MS) return true
 

@@ -18,9 +18,18 @@ object LicenseClient {
         @com.fasterxml.jackson.annotation.JsonProperty("message") val message: String = ""
     )
 
+    private val lastCheckTime = mutableMapOf<String, Long>()
+
     suspend fun checkLicense(pluginName: String, action: String = "OPEN", data: String = ""): Boolean {
+        // Debounce HOME Check (Max 1 check per 60 seconds per plugin)
+        if (action == "HOME") {
+            val key = "$pluginName|$action"
+            val now = System.currentTimeMillis()
+            if (now - (lastCheckTime[key] ?: 0L) < 60000L) return true
+            lastCheckTime[key] = now
+        }
+        
         // Cache Check (Optimized: only skip check if status is active AND action is routine/OPEN)
-        // If action is SEARCH or LOAD, we might want to log it even if cached?
         // User wants REALTIME detection. So we should HIT the server for SEARCH/LOAD events.
         // But we can still cache the *validity* result to avoid blocking if server is slow?
         // No, server logs on hit. So we must hit server.

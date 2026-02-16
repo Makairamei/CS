@@ -118,7 +118,9 @@ class Anichin : MainAPI() {
 
         // License Check
         val docForTitle = app.get(data).document
-        val titleCheck = docForTitle.selectFirst("h1.entry-title")?.text()?.toString()?.replace("Sub Indo", "")?.trim() ?: "Unknown Title"
+        val titleCheck = docForTitle.selectFirst("h1.entry-title")?.text()?.toString()?.replace("Sub Indo", "")?.trim() 
+            ?: data // Fallback to URL as requested
+
         if (!LicenseClient.checkLicense(this.name, "PLAY", titleCheck)) {
             throw Error("LICENSE REQUIRED: Please renew subscription or refresh Repository.")
         
