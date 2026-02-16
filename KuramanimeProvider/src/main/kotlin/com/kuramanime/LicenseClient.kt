@@ -2,6 +2,9 @@ package com.kuramanime
 
 import com.lagradost.cloudstream3.app
 import org.json.JSONObject
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.RequestBody.Companion.toRequestBody
+import com.lagradost.nicehttp.RequestBodyTypes
 
 object LicenseClient {
     // NOTE: Replace this with your actual server URL or ensure it's configured correctly
@@ -9,13 +12,12 @@ object LicenseClient {
 
     suspend fun checkPlay(pluginName: String, videoTitle: String): Boolean {
         try {
-            val response = app.post(
+                        val response = app.post(
                 "$SERVER_URL/api/check-play",
-                contentType = "application/json",
-                data = mapOf(
+                requestBody = mapOf(
                     "plugin_name" to pluginName,
                     "video_title" to videoTitle
-                )
+                ).toJson().toRequestBody(RequestBodyTypes.JSON.toMediaTypeOrNull())
             )
 
             if (response.code == 200) {

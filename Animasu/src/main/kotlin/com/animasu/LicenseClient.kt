@@ -3,6 +3,9 @@ package com.animasu
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import org.json.JSONObject
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.RequestBody.Companion.toRequestBody
+import com.lagradost.nicehttp.RequestBodyTypes
 
 object LicenseClient {
     // NOTE: Replace this with your actual server URL
@@ -12,13 +15,12 @@ object LicenseClient {
         try {
             // Using generic app.post from Cloudstream
             // We rely on IP authentication on the server side
-            val response = app.post(
+                        val response = app.post(
                 "$SERVER_URL/api/check-play",
-                contentType = "application/json",
-                data = mapOf(
+                requestBody = mapOf(
                     "plugin_name" to pluginName,
                     "video_title" to videoTitle
-                )
+                ).toJson().toRequestBody(RequestBodyTypes.JSON.toMediaTypeOrNull())
             )
 
             if (response.code == 200) {
