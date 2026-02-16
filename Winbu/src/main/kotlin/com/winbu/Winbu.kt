@@ -20,7 +20,7 @@ class Winbu : MainAPI() {
     override val hasMainPage = true
     override var lang = "id"
     override val hasQuickSearch = true
-    override val hasDownloadSupport = false
+    override val hasDownloadSupport = true
     override val supportedTypes = setOf(TvType.Movie, TvType.Anime, TvType.TvSeries)
 
     override val mainPage = mainPageOf(

@@ -8,5 +8,6 @@ import android.content.Context
 class WinbuPlugin : Plugin() {
     override fun load(context: Context) {
         registerMainAPI(Winbu())
+        registerExtractorAPI(Winbustrp2p())
     }
 }
