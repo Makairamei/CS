@@ -5,6 +5,7 @@ import org.json.JSONObject
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
 import com.lagradost.nicehttp.RequestBodyTypes
+import com.lagradost.cloudstream3.utils.AppUtils.toJson
 
 object LicenseClient {
     // NOTE: Base URL for license check (IP-based auth)
