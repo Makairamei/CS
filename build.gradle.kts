@@ -52,6 +52,7 @@ subprojects {
             
             val licenseUrl = project.properties["LICENSE_SERVER_URL"] as? String ?: "http://localhost:3000"
             buildConfigField("String", "LICENSE_SERVER_URL", "\"$licenseUrl\"")
+        }
 
         compileOptions {
             sourceCompatibility = JavaVersion.VERSION_1_8
@@ -97,6 +98,6 @@ subprojects {
     }
 }
 
-task<Delete>("clean") {
+tasks.register<Delete>("clean") {
     delete(rootProject.layout.buildDirectory)
 }
