@@ -171,7 +171,6 @@ class Winbu : MainAPI() {
             this.plot = description
             this.tags = tags
             this.recommendations = recs
-            addScore(rating)
         }
     } else {
         newMovieLoadResponse(title, url, TvType.Movie, url) {
@@ -179,7 +178,6 @@ class Winbu : MainAPI() {
             this.plot = description
             this.tags = tags
             this.recommendations = recs
-            addScore(rating)
         }
     }
 }
