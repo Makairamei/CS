@@ -60,6 +60,10 @@ subprojects {
         }
 
 
+        buildFeatures {
+            buildConfig = true
+        }
+
         tasks.withType<KotlinJvmCompile> {
             compilerOptions {
                 jvmTarget.set(JvmTarget.JVM_1_8)
