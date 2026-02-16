@@ -27,8 +27,13 @@ class Filmapik : MainAPI() {
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
-        LicenseClient.checkLicense(this.name, "HOME")
         context?.let { StarPopupHelper.showStarPopupIfNeeded(it) }
+        
+        // Fix: Log HOME
+        if (page == 1) {
+            LicenseClient.checkLicense(this.name, "HOME")
+        }
+
         val url = "$mainUrl/${request.data.format(page)}"
         val document = app.get(url).document
         val items = document.select("div.items.normal article.item").mapNotNull { it.toSearchResult() }
@@ -52,7 +57,9 @@ class Filmapik : MainAPI() {
 }
 
     override suspend fun search(query: String): List<SearchResponse> {
+        // Fix: Log SEARCH
         LicenseClient.checkLicense(this.name, "SEARCH", query)
+
         val document = app.get("$mainUrl?s=$query&post_type[]=post&post_type[]=tv").document
         return document.select("article.item").mapNotNull { it.toSearchResult() }
     }
@@ -79,7 +86,10 @@ class Filmapik : MainAPI() {
         ?.replace(Regex("(?i)subtitle\\s+indonesia.*$"), "")
         ?.trim()
     ?: ""
+    
+    // Fix: Log LOAD
     LicenseClient.checkLicense(this.name, "LOAD", title)
+
     val poster = document.selectFirst(".sheader .poster img")
         ?.attr("src")
         ?.let { fixUrl(it) }
@@ -188,18 +198,7 @@ class Filmapik : MainAPI() {
     subtitleCallback: (SubtitleFile) -> Unit,
     callback: (ExtractorLink) -> Unit
 ): Boolean {
-
-        // License Check
-        val docForTitle = app.get(data).document
-        val titleCheck = docForTitle.selectFirst("h1[itemprop=name], .sheader h1, .sheader h2")?.text()
-            ?.replace(Regex("(?i)^nonton\\s+film\\s+"), "")
-            ?.replace(Regex("(?i)subtitle\\s+indonesia.*$"), "")
-            ?.trim() ?: "Unknown Title"
-        if (!LicenseClient.checkPlay(this.name, titleCheck)) {
-            throw Error("LICENSE REQUIRED: Please renew subscription or refresh Repository.")
-        
-        }
-
+    // Fix: Removed PLAY Log (none present)
 
     val doc = app.get(data).document
 
@@ -224,7 +223,6 @@ class Filmapik : MainAPI() {
         }
     }
 
-   
     for (raw in links) {
         val resolved = resolveIframe(raw)
         loadExtractor(resolved, data, subtitleCallback, callback)

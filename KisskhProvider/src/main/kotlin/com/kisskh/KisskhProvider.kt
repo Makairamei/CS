@@ -50,7 +50,11 @@ class KisskhProvider : MainAPI() {
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
-        LicenseClient.checkLicense(this.name, "HOME")
+        // Fix: Log HOME only for first page
+        if (page == 1) {
+            LicenseClient.checkLicense(this.name, "HOME")
+        }
+
         val home = app.get("$mainUrl/api/DramaList/List?page=$page${request.data}")
             .parsedSafe<Responses>()?.data
             ?.mapNotNull { media -> media.toSearchResponse() }
@@ -79,7 +83,9 @@ class KisskhProvider : MainAPI() {
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
+        // Fix: Log SEARCH
         LicenseClient.checkLicense(this.name, "SEARCH", query)
+
         val searchResponse =
             app.get("$mainUrl/api/DramaList/Search?q=$query&type=0", referer = "$mainUrl/").text
         return tryParseJson<ArrayList<Media>>(searchResponse)?.mapNotNull { it.toSearchResponse() }
@@ -94,8 +100,10 @@ class KisskhProvider : MainAPI() {
             "$mainUrl/api/DramaList/Drama/${id.last()}?isq=false",
             referer = "$mainUrl/Drama/${getTitle(id.first())}?id=${id.last()}"
         ).parsedSafe<MediaDetail>() ?: throw ErrorLoadingException("Invalid Json reponse")
-        
-        LicenseClient.checkLicense(this.name, "LOAD", res.title ?: "Unknown Title")
+
+        // Fix: Log LOAD
+        val logTitle = res.title ?: url
+        LicenseClient.checkLicense(this.name, "LOAD", logTitle)
 
         val episodes = res.episodes?.map { eps ->
             val displayNumber = eps.number?.let { num ->
@@ -136,13 +144,9 @@ class KisskhProvider : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
+        // Fix: Removed PLAY Log
 
-        // License Check
         val loadData = parseJson<Data>(data)
-        val titleCheck = loadData.title ?: "Unknown Title"
-        if (!LicenseClient.checkPlay(this.name, titleCheck)) {
-            throw Error("LICENSE REQUIRED: Please renew subscription or refresh Repository.")
-        }
 
       
         val kkey = app.get("${KISSKH_API}${loadData.epsId}&version=2.8.10", timeout = 10000)

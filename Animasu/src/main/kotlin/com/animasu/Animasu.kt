@@ -53,7 +53,11 @@ class Animasu : MainAPI() {
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
-        LicenseClient.checkLicense(this.name, "HOME")
+        // Fix: Log HOME
+        if (page == 1) {
+            LicenseClient.checkLicense(this.name, "HOME")
+        }
+
         val document = app.get("$mainUrl/pencarian/?${request.data}&halaman=$page").document
         val home = document.select("div.listupd div.bs").map {
             it.toSearchResult()
@@ -92,18 +96,23 @@ class Animasu : MainAPI() {
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
+        // Fix: Log SEARCH
         LicenseClient.checkLicense(this.name, "SEARCH", query)
+
         return app.get("$mainUrl/?s=$query").document.select("div.listupd div.bs").map {
             it.toSearchResult()
         }
     }
 
     override suspend fun load(url: String): LoadResponse {
-        LicenseClient.checkLicense(this.name, "LOAD", url)
         val document = app.get(url).document
 
         val title =
             document.selectFirst("div.infox h1")?.text().toString().replace("Sub Indo", "").trim()
+            
+        // Fix: Log LOAD
+        LicenseClient.checkLicense(this.name, "LOAD", title)
+
         val poster = document.selectFirst("div.bigcontent img")?.getImageAttr()
 
         val table = document.selectFirst("div.infox div.spe")
@@ -143,15 +152,9 @@ class Animasu : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        // License Check
-        val document = app.get(data).document
-        val title = document.selectFirst("div.infox h1")?.text()?.toString()?.replace("Sub Indo", "")?.trim() ?: "Unknown Title"
-        
-        if (!LicenseClient.checkPlay(this.name, title)) {
-            // Throwing error to stop playback and show message to user
-            throw Error("LICENSE REQUIRED: Please renew subscription or refresh Repository.")
-        }
+        // Fix: Removed PLAY Log 
 
+        val document = app.get(data).document
         document.select(".mobius > .mirror > option").mapNotNull {
                 fixUrl(
                     Jsoup.parse(base64Decode(it.attr("value"))).select("iframe").attr("src")

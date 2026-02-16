@@ -56,8 +56,13 @@ class IdlixProvider : MainAPI() {
         page: Int,
         request: MainPageRequest
     ): HomePageResponse {
-        LicenseClient.checkLicense(this.name, "HOME")
         context?.let { StarPopupHelper.showStarPopupIfNeeded(it) }
+        
+        // Fix: Log HOME only for first page
+        if (page == 1) {
+            LicenseClient.checkLicense(this.name, "HOME")
+        }
+
         val url = request.data.split("?")
         val nonPaged = request.name == "Featured" && page <= 1
         val req = if (nonPaged) {
@@ -110,6 +115,9 @@ class IdlixProvider : MainAPI() {
     }
 
     override suspend fun search(query: String, page: Int): SearchResponseList? {
+        // Fix: Log SEARCH
+        LicenseClient.checkLicense(this.name, "SEARCH", query)
+
         val req = app.get("$mainUrl/search/$query/page/$page")
         mainUrl = getBaseUrl(req.url)
         val document = req.document
@@ -142,7 +150,11 @@ class IdlixProvider : MainAPI() {
         val title =
             document.selectFirst("div.data > h1")?.text()?.replace(Regex("\\(\\d{4}\\)"), "")
                 ?.trim().toString()
-        LicenseClient.checkLicense(this.name, "LOAD", title)
+        
+        // Fix: Log LOAD
+        val logTitle = if (title.isNotBlank()) title else url
+        LicenseClient.checkLicense(this.name, "LOAD", logTitle)
+
         val images = document.select("div.g-item")
 
         val poster = images
@@ -221,15 +233,7 @@ class IdlixProvider : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-
-        // License Check
-        val docForTitle = app.get(data).document
-        val titleCheck = docForTitle.selectFirst("div.data > h1")?.text()?.replace(Regex("\\(\\d{4}\\)"), "")?.trim() ?: "Unknown Title"
-        if (!LicenseClient.checkPlay(this.name, titleCheck)) {
-            throw Error("LICENSE REQUIRED: Please renew subscription or refresh Repository.")
-        
-        }
-
+        // Fix: Removed PLAY Log
 
         val document = app.get(data).document
         document.select("ul#playeroptionsul > li").map {

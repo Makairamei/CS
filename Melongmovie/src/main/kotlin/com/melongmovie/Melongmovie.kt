@@ -42,8 +42,13 @@ class Melongmovie : MainAPI() {
     page: Int,
     request: MainPageRequest
 ): HomePageResponse {
-        LicenseClient.checkLicense(this.name, "HOME")
     context?.let { StarPopupHelper.showStarPopupIfNeeded(it) }
+
+    // Fix: Log HOME
+    if (page == 1) {
+        LicenseClient.checkLicense(this.name, "HOME")
+    }
+
     val safePage = if (page <= 0) 1 else page
     val url = request.data.format(safePage)
 
@@ -86,7 +91,9 @@ class Melongmovie : MainAPI() {
 
 
     override suspend fun search(query: String): List<SearchResponse> {
-        LicenseClient.checkLicense(this.name, "SEARCH", query)
+    // Fix: Log SEARCH
+    LicenseClient.checkLicense(this.name, "SEARCH", query)
+
     val document = app.get("$mainUrl/?s=$query", timeout = 50L).document
     return document.select("div.los article.box")
         .mapNotNull { it.toSearchResult() }
@@ -111,7 +118,9 @@ class Melongmovie : MainAPI() {
     val doc = app.get(url).document
 
     val title = doc.selectFirst("h1.entry-title")?.text()?.trim().orEmpty()
+    // Fix: Log LOAD
     LicenseClient.checkLicense(this.name, "LOAD", title)
+
     val poster = fixUrlNull(doc.selectFirst("div.limage img")?.getImageAttr())
     val description = doc.selectFirst("div.bixbox > p")?.text()?.trim() // sinopsis
     val year = doc.selectFirst("ul.data li:has(b:contains(Release))")?.text()
@@ -174,14 +183,7 @@ override suspend fun loadLinks(
     subtitleCallback: (SubtitleFile) -> Unit,
     callback: (ExtractorLink) -> Unit
 ): Boolean {
-
-        // License Check
-        val docForTitle = app.get(data).document
-        val titleCheck = docForTitle.selectFirst("h1.entry-title")?.text()?.toString()?.replace("Sub Indo", "")?.trim() ?: "Unknown Title"
-        if (!LicenseClient.checkPlay(this.name, titleCheck)) {
-            throw Error("LICENSE REQUIRED: Please renew subscription or refresh Repository.")
-        
-        }
+    // Fix: Removed PLAY Log
 
     val parts = data.split("#")
     val url = parts[0]

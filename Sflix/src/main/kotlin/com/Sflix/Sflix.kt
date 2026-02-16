@@ -43,7 +43,11 @@ class Sflix : MainAPI() {
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
-        LicenseClient.checkLicense(this.name, "HOME")
+        // Fix: Log HOME
+        if (page == 1) {
+            LicenseClient.checkLicense(this.name, "HOME")
+        }
+
         val url = "$mainUrl/wefeed-h5-bff/web/ranking-list/content?id=${request.data}&page=$page&perPage=12"
         val home = app.get(url).parsedSafe<Media>()?.data?.subjectList?.map { it.toSearchResponse(this) }
             ?: throw ErrorLoadingException("No Data Found")
@@ -53,7 +57,9 @@ class Sflix : MainAPI() {
     override suspend fun quickSearch(query: String): List<SearchResponse> = search(query)
 
     override suspend fun search(query: String): List<SearchResponse> {
+        // Fix: Log SEARCH
         LicenseClient.checkLicense(this.name, "SEARCH", query)
+
         val body = mapOf("keyword" to query, "page" to "1", "perPage" to "0", "subjectType" to "0")
             .toJson().toRequestBody(RequestBodyTypes.JSON.toMediaTypeOrNull())
         return app.post("$mainUrl/wefeed-h5-bff/web/subject/search", requestBody = body)
@@ -65,7 +71,10 @@ class Sflix : MainAPI() {
         val doc = app.get("$mainUrl/wefeed-h5-bff/web/subject/detail?subjectId=$id").parsedSafe<MediaDetail>()?.data
         val subject = doc?.subject
         val title = subject?.title ?: ""
+        
+        // Fix: Log LOAD
         LicenseClient.checkLicense(this.name, "LOAD", title)
+
         val poster = subject?.cover?.url
         val tags = subject?.genre?.split(",")?.map { it.trim() }
         val year = subject?.releaseDate?.substringBefore("-")?.toIntOrNull()
@@ -118,13 +127,9 @@ class Sflix : MainAPI() {
 		subtitleCallback: (SubtitleFile) -> Unit,
 		callback: (ExtractorLink) -> Unit
 	): Boolean {
+        // Fix: Removed PLAY Log
 
-        // License Check
-        // License Check
-        val media = parseJson<LoadData>(data)
-        // Match 'aw' logic: Check license using plugin name (check-ip)
-        LicenseClient.checkLicense(this.name, "PLAY", media.id ?: "Unknown")
-
+		val media = parseJson<LoadData>(data)
 
 		try {
 			val referer = "$apiUrl/spa/videoPlayPage/movies/${media.detailPath}?id=${media.id}&type=/movie/detail&lang=en"

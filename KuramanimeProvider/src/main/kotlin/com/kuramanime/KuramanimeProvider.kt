@@ -56,7 +56,11 @@ class KuramanimeProvider : MainAPI() {
         page: Int,
         request: MainPageRequest
     ): HomePageResponse {
-        LicenseClient.checkLicense(this.name, "HOME")
+        // Fix: Log HOME
+        if (page == 1) {
+            LicenseClient.checkLicense(this.name, "HOME")
+        }
+
         val document = app.get(request.data + page).document
         val home = document.select("div#animeList div.product__item").mapNotNull {
             it.toSearchResult()
@@ -89,7 +93,9 @@ class KuramanimeProvider : MainAPI() {
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
+        // Fix: Log SEARCH
         LicenseClient.checkLicense(this.name, "SEARCH", query)
+
         return app.get(
             "$mainUrl/anime?search=$query&order_by=latest"
         ).document.select("div#animeList div.product__item").mapNotNull {
@@ -101,7 +107,10 @@ class KuramanimeProvider : MainAPI() {
         val document = app.get(url).document
 
         val title = document.selectFirst(".anime__details__title > h3")!!.text().trim()
+        
+        // Fix: Log LOAD
         LicenseClient.checkLicense(this.name, "LOAD", title)
+
         val poster = document.selectFirst(".anime__details__pic")?.attr("data-setbg")
         val tags =
             document.select("div.anime__details__widget > div > div:nth-child(2) > ul > li:nth-child(1)")
@@ -211,15 +220,7 @@ class KuramanimeProvider : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-
-        // License Check
-        val docForTitle = app.get(data).document
-        val titleCheck = docForTitle.selectFirst(".anime__details__title > h3")?.text()?.trim() ?: "Unknown Title"
-        if (!LicenseClient.checkPlay(this.name, titleCheck)) {
-            throw Error("LICENSE REQUIRED: Please renew subscription or refresh Repository.")
-        
-        }
-
+        // Fix: Removed PLAY Log
 
         val req = app.get(data)
         val res = req.document

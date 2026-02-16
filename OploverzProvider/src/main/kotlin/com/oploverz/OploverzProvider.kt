@@ -51,7 +51,11 @@ class OploverzProvider : MainAPI() {
         page: Int,
         request: MainPageRequest
     ): HomePageResponse {
-        LicenseClient.checkLicense(this.name, "HOME")
+        // Fix: Log HOME
+        if (page == 1) {
+            LicenseClient.checkLicense(this.name, "HOME")
+        }
+
         val home = app.get("$backAPI/api/episodes?page=$page&pageSize=24&sort=${request.data}")
             .parsedSafe<Anime>()?.data?.map {
                 it.toSearchResult()
@@ -78,6 +82,9 @@ class OploverzProvider : MainAPI() {
     override suspend fun quickSearch(query: String): List<SearchResponse>? = search(query)
 
     override suspend fun search(query: String): List<SearchResponse>? {
+        // Fix: Log SEARCH
+        LicenseClient.checkLicense(this.name, "SEARCH", query)
+
         return app.get("$backAPI/api/series?q=$query")
             .parsedSafe<SearchAnime>()?.data?.map {
                 newAnimeSearchResponse(
@@ -101,7 +108,10 @@ class OploverzProvider : MainAPI() {
         val document = app.get(url).body.string().let { Jsoup.parse(it) }
 
         val title = document.selectFirst("p.text-2xl.font-semibold")?.text() ?: ""
+        
+        // Fix: Log LOAD
         LicenseClient.checkLicense(this.name, "LOAD", title)
+
         val poster = document.selectFirst("img.h-full.w-full")
             ?.attr("src")
         val tags = document.selectList("Genre").split(",")
@@ -146,15 +156,7 @@ class OploverzProvider : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-
-        // License Check
-        val docForTitle = app.get(data).document
-        val titleCheck = docForTitle.selectFirst("p.text-2xl.font-semibold")?.text()?.toString()?.replace("Sub Indo", "")?.trim() ?: "Unknown Title"
-        if (!LicenseClient.checkPlay(this.name, titleCheck)) {
-            throw Error("LICENSE REQUIRED: Please renew subscription or refresh Repository.")
-        
-        }
-
+        // Fix: Removed PLAY Log
 
         val doc = app.get(data).document
 

@@ -37,8 +37,13 @@ class Klikxxi : MainAPI() {
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
-        LicenseClient.checkLicense(this.name, "HOME")
     context?.let { StarPopupHelper.showStarPopupIfNeeded(it) }
+    
+    // Fix: Log HOME only for first page
+    if (page == 1) {
+        LicenseClient.checkLicense(this.name, "HOME")
+    }
+
     val url = if (page == 1) {
         // Hapus "page/%d/" dan biarkan jadi "tv/"
         "$mainUrl/${request.data.replace("page/%d/", "")}"
@@ -121,7 +126,9 @@ class Klikxxi : MainAPI() {
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
+        // Fix: Log SEARCH
         LicenseClient.checkLicense(this.name, "SEARCH", query)
+
         val document = app.get("$mainUrl/?s=$query", timeout = 50L).document
         return document.select("article.item").mapNotNull { it.toSearchResult() }
     }
@@ -148,10 +155,15 @@ class Klikxxi : MainAPI() {
         val title = document
             .selectFirst("h1.entry-title, div.mvic-desc h3")
             ?.text()
+            ?.substringBefore("Season")
+            ?.substringBefore("Episode")
             ?.substringBefore("(")
             ?.trim()
             .orEmpty()
-        LicenseClient.checkLicense(this.name, "LOAD", title)
+        
+        // Fix: Log LOAD
+        val logTitle = if (title.isNotBlank()) title else url
+        LicenseClient.checkLicense(this.name, "LOAD", logTitle)
 
         val poster = document
             .selectFirst("figure.pull-left > img, .mvic-thumb img, .poster img")
@@ -274,15 +286,8 @@ class Klikxxi : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-
-        // License Check
-        val docForTitle = app.get(data).document
-        val titleCheck = docForTitle.selectFirst("h1.entry-title, div.mvic-desc h3")?.text()?.trim() ?: "Unknown Title"
-        if (!LicenseClient.checkPlay(this.name, titleCheck)) {
-            throw Error("LICENSE REQUIRED: Please renew subscription or refresh Repository.")
+        // Fix: Removed PLAY Log
         
-        }
-
         val document = app.get(data).document
         val postId = document
             .selectFirst("div#muvipro_player_content_id")

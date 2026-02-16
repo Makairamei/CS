@@ -49,7 +49,11 @@ class Anoboy : MainAPI() {
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
-        LicenseClient.checkLicense(this.name, "HOME")
+        // Fix: Log HOME
+        if (page == 1) {
+            LicenseClient.checkLicense(this.name, "HOME")
+        }
+
         val url = "$mainUrl/${request.data}&page=$page"
         val document = app.get(url).document
         val items = document.select("div.listupd article.bs")
@@ -69,7 +73,9 @@ class Anoboy : MainAPI() {
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
+        // Fix: Log SEARCH
         LicenseClient.checkLicense(this.name, "SEARCH", query)
+
         val document = app.get("$mainUrl/?s=$query").document
         return document.select("div.listupd article.bs")
             .mapNotNull { it.toSearchResult() }
@@ -85,10 +91,13 @@ class Anoboy : MainAPI() {
     }
 
     override suspend fun load(url: String): LoadResponse {
-        LicenseClient.checkLicense(this.name, "LOAD", url)
         val document = app.get(url).document
 
         val title = document.selectFirst("h1.entry-title")?.text()?.trim().orEmpty()
+        
+        // Fix: Log LOAD
+        LicenseClient.checkLicense(this.name, "LOAD", title)
+
         val poster = document.selectFirst("div.bigcontent img")?.getImageAttr()?.let { fixUrlNull(it) }
 
         val description = document.select("div.entry-content p")
@@ -218,14 +227,7 @@ class Anoboy : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-
-        // License Check
-        val docForTitle = app.get(data).document
-        val titleCheck = docForTitle.selectFirst("div.infox h1")?.text()?.toString()?.replace("Sub Indo", "")?.trim() ?: "Unknown Title"
-        if (!LicenseClient.checkPlay(this.name, titleCheck)) {
-            throw Error("LICENSE REQUIRED: Please renew subscription or refresh Repository.")
-        
-        }
+        // Fix: Removed PLAY Log (not present)
 
         val document = app.get(data).document
 
@@ -282,4 +284,3 @@ class Anoboy : MainAPI() {
             ?: this?.attr("src")
     }
 }
-

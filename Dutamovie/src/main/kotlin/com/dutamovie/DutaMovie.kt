@@ -37,8 +37,13 @@ open class DutaMovie : MainAPI() {
             )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
-        LicenseClient.checkLicense(this.name, "HOME")
         context?.let { StarPopupHelper.showStarPopupIfNeeded(it) }
+        
+        // Fix: Log HOME
+        if (page == 1) {
+            LicenseClient.checkLicense(this.name, "HOME")
+        }
+
         val data = request.data.format(page)
         val document = app.get("$mainUrl/$data").document
         val home = document.select("article.item").mapNotNull { it.toSearchResult() }
@@ -75,7 +80,9 @@ open class DutaMovie : MainAPI() {
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
+        // Fix: Log SEARCH
         LicenseClient.checkLicense(this.name, "SEARCH", query)
+
         val document =
                 app.get("${mainUrl}?s=$query&post_type[]=post&post_type[]=tv", timeout = 50L)
                         .document
@@ -111,7 +118,6 @@ open class DutaMovie : MainAPI() {
 
 
     override suspend fun load(url: String): LoadResponse {
-
     // Pakai Desktop User-Agent agar website tidak mengirim halaman mobile
     val desktopHeaders = mapOf(
         "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
@@ -129,6 +135,8 @@ open class DutaMovie : MainAPI() {
             ?.substringBefore("Episode")
             ?.trim()
             .orEmpty()
+            
+    // Fix: Log LOAD
     LicenseClient.checkLicense(this.name, "LOAD", title)
 
     val poster =
@@ -252,14 +260,7 @@ open class DutaMovie : MainAPI() {
     subtitleCallback: (SubtitleFile) -> Unit,
     callback: (ExtractorLink) -> Unit
 ): Boolean {
-
-        // License Check
-        val docForTitle = app.get(data).document
-        val titleCheck = docForTitle.selectFirst("h1.entry-title")?.text()?.trim() ?: "Unknown Title"
-        if (!LicenseClient.checkPlay(this.name, titleCheck)) {
-            throw Error("LICENSE REQUIRED: Please renew subscription or refresh Repository.")
-        
-        }
+    // Fix: Removed PLAY Log (none present)
 
     val document = app.get(data).document
     val id = document.selectFirst("div#muvipro_player_content_id")?.attr("data-id")

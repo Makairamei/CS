@@ -63,8 +63,13 @@ class OtakudesuProvider : MainAPI() {
         page: Int,
         request: MainPageRequest
     ): HomePageResponse {
-        LicenseClient.checkLicense(this.name, "HOME")
         context?.let { StarPopupHelper.showStarPopupIfNeeded(it) }
+        
+        // Fix: Log HOME
+        if (page == 1) {
+            LicenseClient.checkLicense(this.name, "HOME")
+        }
+
         val document = app.get(request.data + page).document
         val home = document.select("div.venz > ul > li").mapNotNull {
             it.toSearchResult()
@@ -86,7 +91,9 @@ class OtakudesuProvider : MainAPI() {
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
+        // Fix: Log SEARCH
         LicenseClient.checkLicense(this.name, "SEARCH", query)
+
     val url = "$mainUrl/?s=$query&post_type=anime"
     val document = app.get(url).document
 
@@ -108,7 +115,10 @@ class OtakudesuProvider : MainAPI() {
 
         val title = document.selectFirst("div.infozingle > p:nth-child(1) > span")?.ownText()
             ?.replace(":", "")?.trim().toString()
+        
+        // Fix: Log LOAD
         LicenseClient.checkLicense(this.name, "LOAD", title)
+
         val poster = document.selectFirst("div.fotoanime > img")?.attr("src")
         val tags = document.select("div.infozingle > p:nth-child(11) > span > a").map { it.text() }
         val type = getType(
@@ -178,15 +188,7 @@ class OtakudesuProvider : MainAPI() {
     subtitleCallback: (SubtitleFile) -> Unit,
     callback: (ExtractorLink) -> Unit
 ): Boolean {
-
-        // License Check
-        val docForTitle = app.get(data).document
-        val titleCheck = docForTitle.selectFirst("div.infozingle > p:nth-child(1) > span")?.ownText()?.replace(":", "")?.trim() ?: "Unknown Title"
-        if (!LicenseClient.checkPlay(this.name, titleCheck)) {
-            throw Error("LICENSE REQUIRED: Please renew subscription or refresh Repository.")
-        
-        }
-
+    // Fix: Removed PLAY Log
 
     val document = app.get(data).document
 

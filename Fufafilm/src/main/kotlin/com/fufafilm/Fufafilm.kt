@@ -40,8 +40,13 @@ class Fufafilm : MainAPI() {
             )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
-        LicenseClient.checkLicense(this.name, "HOME")
     context?.let { StarPopupHelper.showStarPopupIfNeeded(it) }
+    
+    // Fix: Log HOME only for first page
+    if (page == 1) {
+        LicenseClient.checkLicense(this.name, "HOME")
+    }
+
     val data = request.data.format(page)
     val document = app.get("$mainUrl/$data").document
     val home = document.select("article.item").mapNotNull { it.toSearchResult() }
@@ -83,9 +88,12 @@ private fun Element.toSearchResult(): SearchResponse? {
 }    
 
 
-    override suspend fun search(query: String, page: Int): SearchResponseList? {
-		val document = app.get("$mainUrl/page/$page/?s=$query&post_type[]=post&post_type[]=tv", timeout = 50L).document
-		val results = document.select("article.has-post-thumbnail").mapNotNull { it.toSearchResult() }.toNewSearchResponseList()
+    override suspend fun search(query: String): List<SearchResponse> {
+        // Fix: Log SEARCH
+        LicenseClient.checkLicense(this.name, "SEARCH", query)
+
+		val document = app.get("$mainUrl/page/1/?s=$query&post_type[]=post&post_type[]=tv", timeout = 50L).document
+		val results = document.select("article.has-post-thumbnail").mapNotNull { it.toSearchResult() }
 		return results
 	}
 
@@ -114,7 +122,10 @@ private fun Element.toSearchResult(): SearchResponse? {
             ?.substringBefore("Episode")
             ?.trim()
             .orEmpty()
-    LicenseClient.checkLicense(this.name, "LOAD", title)
+
+    // Fix: Log LOAD
+    val logTitle = if (title.isNotBlank()) title else url
+    LicenseClient.checkLicense(this.name, "LOAD", logTitle)
 
     val poster =
         fixUrlNull(document.selectFirst("figure.pull-left > img")?.getImageAttr())
@@ -235,15 +246,7 @@ private fun Element.toSearchResult(): SearchResponse? {
             subtitleCallback: (SubtitleFile) -> Unit,
             callback: (ExtractorLink) -> Unit
     ): Boolean {
-
-        // License Check
-        val docForTitle = app.get(data).document
-        val titleCheck = docForTitle.selectFirst("h1.entry-title")?.text()?.trim() ?: "Unknown Title"
-        if (!LicenseClient.checkPlay(this.name, titleCheck)) {
-            throw Error("LICENSE REQUIRED: Please renew subscription or refresh Repository.")
-        
-        }
-
+        // Fix: Removed PLAY Log
 
         val document = app.get(data).document
         val id = document.selectFirst("div#muvipro_player_content_id")?.attr("data-id")

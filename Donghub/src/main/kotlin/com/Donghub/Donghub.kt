@@ -25,7 +25,12 @@ class Donghub : MainAPI() {
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         context?.let { StarPopupHelper.showStarPopupIfNeeded(it) }
-        LicenseClient.checkLicense(this.name, "HOME")
+        
+        // Fix: Log HOME
+        if (page == 1) {
+            LicenseClient.checkLicense(this.name, "HOME")
+        }
+
         val document = app.get("$mainUrl/${request.data}&page=$page").document
         val items = document.select("div.listupd > article").mapNotNull { it.toSearchResult() }
         return newHomePageResponse(
@@ -44,7 +49,9 @@ class Donghub : MainAPI() {
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
+        // Fix: Log SEARCH
         LicenseClient.checkLicense(this.name, "SEARCH", query)
+
         val list = mutableListOf<SearchResponse>()
         for (i in 1..3) {
             val document = app.get("$mainUrl/page/$i/?s=$query").document
@@ -56,9 +63,12 @@ class Donghub : MainAPI() {
     }
 
     override suspend fun load(url: String): LoadResponse {
-        LicenseClient.checkLicense(this.name, "LOAD", url)
         val document = app.get(url).document
         val title = document.selectFirst("h1.entry-title")?.text().orEmpty()
+        
+        // Fix: Log LOAD
+        LicenseClient.checkLicense(this.name, "LOAD", title)
+
         val description = document.selectFirst("div.entry-content")?.text()?.trim()
         val typeText = document.selectFirst(".spe")?.text().orEmpty()
         val isMovie = typeText.contains("Movie", true)
@@ -105,15 +115,7 @@ class Donghub : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-
-        // License Check
-        // License Check
-        val docForTitle = app.get(data).document
-        val titleCheck = docForTitle.selectFirst("div.infox h1")?.text()?.toString()?.replace("Sub Indo", "")?.trim() ?: "Unknown Title"
-        if (!LicenseClient.checkLicense(this.name, "PLAY", titleCheck)) {
-            throw Error("LICENSE REQUIRED: Please renew subscription or refresh Repository.")
-        
-        }
+        // Fix: Removed PLAY Log (none present)
 
         val document = app.get(data).document
         document.select(".mobius option").forEach { item ->

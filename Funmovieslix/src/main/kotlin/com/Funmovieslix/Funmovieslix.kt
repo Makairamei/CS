@@ -49,7 +49,11 @@ class Funmovieslix : MainAPI() {
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
-        LicenseClient.checkLicense(this.name, "HOME")
+        // Fix: Log HOME only for first page
+        if (page == 1) {
+            LicenseClient.checkLicense(this.name, "HOME")
+        }
+
     val document = if (request.data == "latest-updates") {
         val url = if (page == 1)
             "$mainUrl/latest-updates/"
@@ -112,7 +116,9 @@ class Funmovieslix : MainAPI() {
 
 
     override suspend fun search(query: String): List<SearchResponse> {
+        // Fix: Log SEARCH
         LicenseClient.checkLicense(this.name, "SEARCH", query)
+
             val document = app.get("${mainUrl}?s=$query").document
             val results =document.select("#gmr-main-load div.movie-card").mapNotNull { it.toSearchResult() }
         return results
@@ -121,7 +127,11 @@ class Funmovieslix : MainAPI() {
     override suspend fun load(url: String): LoadResponse {
         val document = app.get(url).document
         val title =document.select("meta[property=og:title]").attr("content").substringBefore("(").substringBefore("-").trim()
-        LicenseClient.checkLicense(this.name, "LOAD", title)
+        
+        // Fix: Log LOAD
+        val logTitle = if (title.isNotBlank()) title else url
+        LicenseClient.checkLicense(this.name, "LOAD", logTitle)
+        
         val poster = document.select("meta[property=og:image]").attr("content")
         val description = document.select("div.desc-box p,div.entry-content p").text()
         val actors=document.select("div.cast-grid a").map { it.text() }
@@ -195,14 +205,7 @@ class Funmovieslix : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-
-        // License Check
-        val docForTitle = app.get(data).document
-        val titleCheck = docForTitle.select("meta[property=og:title]").attr("content").substringBefore("(").substringBefore("-").trim().ifEmpty { "Unknown Title" }
-        if (!LicenseClient.checkPlay(this.name, titleCheck)) {
-            throw Error("LICENSE REQUIRED: Please renew subscription or refresh Repository.")
-        
-        }
+        // Fix: Removed PLAY Log
 
         val document = app.get(data).document
 

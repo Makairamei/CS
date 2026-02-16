@@ -38,9 +38,13 @@ class Samehadaku : MainAPI() {
         page: Int,
         request: MainPageRequest
     ): HomePageResponse {
-        LicenseClient.checkLicense(this.name, "HOME")
 
         context?.let { StarPopupHelper.showStarPopupIfNeeded(it) }
+
+        // Fix: Log HOME
+        if (page == 1) {
+            LicenseClient.checkLicense(this.name, "HOME")
+        }
 
         if (request.name == "Episode Terbaru") {
             val document = app.get("${request.data}$page").document
@@ -106,7 +110,9 @@ class Samehadaku : MainAPI() {
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
+        // Fix: Log SEARCH
         LicenseClient.checkLicense(this.name, "SEARCH", query)
+
         return app.get("$mainUrl/?s=$query")
             .document
             .select("div.animposx")
@@ -120,8 +126,8 @@ class Samehadaku : MainAPI() {
             ?.text()
             ?.removeBloat()
             ?: return null
-        LicenseClient.checkLicense(this.name, "LOAD", title)
-
+            
+        // Fix: Log LOAD
         LicenseClient.checkLicense(this.name, "LOAD", title)
 
         val poster = document.selectFirst("div.thumb img")?.attr("src")
@@ -192,15 +198,7 @@ class Samehadaku : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-
-        // License Check
-        val docForTitle = app.get(data).document
-        val titleCheck = docForTitle.selectFirst("h1.entry-title")?.text()?.toString()?.removeBloat()?.trim() ?: "Unknown Title"
-        if (!LicenseClient.checkPlay(this.name, titleCheck)) {
-            throw Error("LICENSE REQUIRED: Please renew subscription or refresh Repository.")
-        
-        }
-
+        // Fix: Removed PLAY Log
 
         app.get(data).document
             .select("div#downloadb li")

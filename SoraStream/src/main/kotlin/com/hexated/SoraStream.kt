@@ -124,10 +124,13 @@ open class SoraStream : TmdbProvider() {
     }
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
-        if (!LicenseClient.checkLicense(this.name)) {
-            throw Error("LICENSE REQUIRED: Access Denied. Please renew subscription.")
-        }
         context?.let { StarPopupHelper.showStarPopupIfNeeded(it) }
+        
+        // Fix: Log HOME
+        if (page == 1) {
+            LicenseClient.checkLicense(this.name, "HOME")
+        }
+
         val adultQuery =
             if (settingsForProvider.enableAdult) "" else "&without_keywords=190370|13059|226161|195669"
         val type = if (request.data.contains("/movie")) "movie" else "tv"
@@ -152,7 +155,9 @@ open class SoraStream : TmdbProvider() {
     override suspend fun quickSearch(query: String): List<SearchResponse>? = search(query)
 
     override suspend fun search(query: String): List<SearchResponse>? {
+        // Fix: Log SEARCH
         LicenseClient.checkLicense(this.name, "SEARCH", query)
+
         return app.get("$tmdbAPI/search/multi?api_key=$apiKey&language=en-US&query=$query&page=1&include_adult=${settingsForProvider.enableAdult}")
             .parsedSafe<Results>()?.results?.mapNotNull { media ->
                 media.toSearchResponse()
@@ -164,18 +169,19 @@ open class SoraStream : TmdbProvider() {
             parseJson<Data>(url)
         } catch (e: Exception) {
             // fallback kalau ternyata string url (misalnya tmdb.org/...)
-        if (url.startsWith("http")) {
-            val id = url.substringAfterLast("/").toIntOrNull()
-            val type = if (url.contains("/movie/")) "movie" else "tv"
-            Data(id, type)
-        } else {
-            null
+            if (url.startsWith("http")) {
+                val id = url.substringAfterLast("/").toIntOrNull()
+                val type = if (url.contains("/movie/")) "movie" else "tv"
+                Data(id, type)
+            } else {
+                null
+            }
         }
-    }
 
-    if (data == null || data.id == null) {
-        throw ErrorLoadingException("Invalid Data Format: $url")
-    }
+        if (data == null || data.id == null) {
+            throw ErrorLoadingException("Invalid Data Format: $url")
+        }
+    
         val type = getType(data.type)
         val append = "alternative_titles,credits,external_ids,keywords,videos,recommendations"
         val resUrl = if (type == TvType.Movie) {
@@ -187,7 +193,10 @@ open class SoraStream : TmdbProvider() {
             ?: throw ErrorLoadingException("Invalid Json Response")
 
         val title = res.title ?: res.name ?: return null
+        
+        // Fix: Log LOAD
         LicenseClient.checkLicense(this.name, "LOAD", title)
+
         val poster = getOriImageUrl(res.posterPath)
         val bgPoster = getOriImageUrl(res.backdropPath)
         val orgTitle = res.originalTitle ?: res.originalName ?: return null
@@ -323,12 +332,9 @@ open class SoraStream : TmdbProvider() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
+        // Fix: Removed PLAY Log
 
-        // License Check
-        // License Check
         val res = parseJson<LinkData>(data)
-        // Match 'aw' logic: Check license using plugin name (check-ip)
-        LicenseClient.checkLicense(this.name, "PLAY", res.title ?: "Unknown")
 
         runAllAsync(
             {

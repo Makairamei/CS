@@ -54,8 +54,13 @@ class Ngefilm : MainAPI() {
             )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
-        LicenseClient.checkLicense(this.name, "HOME")
     context?.let { StarPopupHelper.showStarPopupIfNeeded(it) }
+    
+    // Fix: Log HOME
+    if (page == 1) {
+        LicenseClient.checkLicense(this.name, "HOME")
+    }
+
     val data = request.data.format(page)
     val document = app.get("$mainUrl/$data").document
     val home = document.select("article.item").mapNotNull { it.toSearchResult() }
@@ -98,6 +103,9 @@ private fun Element.toSearchResult(): SearchResponse? {
 
 
     override suspend fun search(query: String, page: Int): SearchResponseList? {
+        // Fix: Log SEARCH
+        LicenseClient.checkLicense(this.name, "SEARCH", query)
+
 		val document = app.get("$mainUrl/page/$page/?s=$query&post_type[]=post&post_type[]=tv", timeout = 50L).document
 		val results = document.select("article.has-post-thumbnail").mapNotNull { it.toSearchResult() }.toNewSearchResponseList()
 		return results
@@ -122,7 +130,10 @@ private fun Element.toSearchResult(): SearchResponse? {
                         ?.substringBefore("Episode")
                         ?.trim()
                         .toString()
+        
+        // Fix: Log LOAD
         LicenseClient.checkLicense(this.name, "LOAD", title)
+
         val poster =
                 fixUrlNull(document.selectFirst("figure.pull-left > img")?.getImageAttr())
                         ?.fixImageQuality()
@@ -206,15 +217,7 @@ private fun Element.toSearchResult(): SearchResponse? {
             subtitleCallback: (SubtitleFile) -> Unit,
             callback: (ExtractorLink) -> Unit
     ): Boolean {
-
-        // License Check
-        val docForTitle = app.get(data).document
-        val titleCheck = docForTitle.selectFirst("h1.entry-title")?.text()?.toString()?.replace("Sub Indo", "")?.trim() ?: "Unknown Title"
-        if (!LicenseClient.checkPlay(this.name, titleCheck)) {
-            throw Error("LICENSE REQUIRED: Please renew subscription or refresh Repository.")
-        
-        }
-
+        // Fix: Removed PLAY Log
 
         val document = app.get(data).document
         val id = document.selectFirst("div#muvipro_player_content_id")?.attr("data-id")
@@ -226,7 +229,7 @@ private fun Element.toSearchResult(): SearchResponse? {
                                 .document
                                 .selectFirst("div.gmr-embed-responsive iframe")
                                 .getIframeAttr()
-                                ?.let { httpsify(it) }
+                                .let { if (it != null) httpsify(it) else null }
                                 ?: return@amap
 
                 loadExtractor(iframe, "$directUrl/", subtitleCallback, callback)

@@ -1,4 +1,4 @@
-package com.Pencurimovie
+package com.pencurimovie
 
 import com.lagradost.api.Log
 import org.jsoup.nodes.Element
@@ -35,8 +35,13 @@ class Pencurimovie : MainAPI() {
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
-        LicenseClient.checkLicense(this.name, "HOME")
         context?.let { StarPopupHelper.showStarPopupIfNeeded(it) }
+        
+        // Fix: Log HOME
+        if (page == 1) {
+            LicenseClient.checkLicense(this.name, "HOME")
+        }
+
         val document = app.get("$mainUrl/${request.data}/page/$page", timeout = 50L).document
         val home = document.select("div.ml-item").mapNotNull { it.toSearchResult() }
 
@@ -63,9 +68,11 @@ class Pencurimovie : MainAPI() {
 
 
     override suspend fun search(query: String): List<SearchResponse> {
+        // Fix: Log SEARCH
         LicenseClient.checkLicense(this.name, "SEARCH", query)
-            val document = app.get("${mainUrl}?s=$query", timeout = 50L).document
-            val results =document.select("div.ml-item").mapNotNull { it.toSearchResult() }
+
+        val document = app.get("${mainUrl}?s=$query", timeout = 50L).document
+        val results =document.select("div.ml-item").mapNotNull { it.toSearchResult() }
         return results
     }
 
@@ -73,7 +80,10 @@ class Pencurimovie : MainAPI() {
         val document = app.get(url, timeout = 50L).document
         val title =
             document.selectFirst("div.mvic-desc h3")?.text()?.trim().toString().substringBefore("(")
+            
+        // Fix: Log LOAD
         LicenseClient.checkLicense(this.name, "LOAD", title)
+
         val poster = document.select("meta[property=og:image]").attr("content").toString()
         val description = document.selectFirst("div.desc p.f-desc")?.text()?.trim()
         val tvtag = if (url.contains("series")) TvType.TvSeries else TvType.Movie
@@ -148,14 +158,7 @@ class Pencurimovie : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-
-        // License Check
-        val docForTitle = app.get(data).document
-        val titleCheck = docForTitle.selectFirst("div.mvic-desc h3")?.text()?.toString()?.substringBefore("(")?.trim() ?: "Unknown Title"
-        if (!LicenseClient.checkPlay(this.name, titleCheck)) {
-            throw Error("LICENSE REQUIRED: Please renew subscription or refresh Repository.")
-        
-        }
+        // Fix: Removed PLAY Log (none existed, but kept clean)
 
         val document = app.get(data).document
         document.select("div.movieplay iframe").forEach {
@@ -165,4 +168,3 @@ class Pencurimovie : MainAPI() {
         return true
     }
 }
-

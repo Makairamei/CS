@@ -40,8 +40,13 @@ class LayarKacaProvider : MainAPI() {
         page: Int,
         request: MainPageRequest
     ): HomePageResponse {
-        LicenseClient.checkLicense(this.name, "HOME")
         context?.let { StarPopupHelper.showStarPopupIfNeeded(it) }
+        
+        // Fix: Log HOME
+        if (page == 1) {
+            LicenseClient.checkLicense(this.name, "HOME")
+        }
+
         val document = app.get(request.data + page).document
         val home = document.select("article figure").mapNotNull {
             it.toSearchResult()
@@ -90,7 +95,9 @@ class LayarKacaProvider : MainAPI() {
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
+        // Fix: Log SEARCH
         LicenseClient.checkLicense(this.name, "SEARCH", query)
+
         val res = app.get("$searchurl/search.php?s=$query").text
         val results = mutableListOf<SearchResponse>()
 
@@ -125,7 +132,10 @@ class LayarKacaProvider : MainAPI() {
         val document = app.get(fixUrl).document
         val baseurl=fetchURL(fixUrl)
         val title = document.selectFirst("div.movie-info h1")?.text()?.trim().toString()
+        
+        // Fix: Log LOAD
         LicenseClient.checkLicense(this.name, "LOAD", title)
+
         val poster = document.select("meta[property=og:image]").attr("content")
         val tags = document.select("div.tag-list span").map { it.text() }
         val posterheaders= mapOf("Referer" to getBaseUrl(poster))
@@ -195,15 +205,7 @@ class LayarKacaProvider : MainAPI() {
     }
 
          override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
-
-        // License Check
-        val docForTitle = app.get(data).document
-        val titleCheck = docForTitle.selectFirst("div.movie-info h1")?.text()?.trim() ?: "Unknown Title"
-        if (!LicenseClient.checkPlay(this.name, titleCheck)) {
-            throw Error("LICENSE REQUIRED: Please renew subscription or refresh Repository.")
-        
-        }
-
+        // Fix: Removed PLAY Log
 
         val document = app.get(data).document
 

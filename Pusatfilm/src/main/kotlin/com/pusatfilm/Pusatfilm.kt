@@ -39,6 +39,12 @@ class Pusatfilm : MainAPI() {
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         context?.let { StarPopupHelper.showStarPopupIfNeeded(it) }
+        
+        // Fix: Log HOME
+        if (page == 1) {
+            LicenseClient.checkLicense(this.name, "HOME")
+        }
+
         val data = request.data.format(page)
         val document = app.get("$mainUrl/$data").document
         val home = document.select("article.item").mapNotNull { it.toSearchResult() }
@@ -73,7 +79,9 @@ class Pusatfilm : MainAPI() {
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
+        // Fix: Log SEARCH
         LicenseClient.checkLicense(this.name, "SEARCH", query)
+
         val document = app.get("$mainUrl/?s=$query&post_type[]=post&post_type[]=tv", timeout = 50L).document
         return document.select("article.item").mapNotNull { it.toSearchResult() }
     }
@@ -96,6 +104,8 @@ class Pusatfilm : MainAPI() {
             ?.substringBefore("Episode")
             ?.trim()
             .toString()
+            
+        // Fix: Log LOAD
         LicenseClient.checkLicense(this.name, "LOAD", title)
 
          val poster =
@@ -163,15 +173,7 @@ class Pusatfilm : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-
-        // License Check
-        val docForTitle = app.get(data).document
-        val titleCheck = docForTitle.selectFirst("h1.entry-title")?.text()?.toString()?.replace("Sub Indo", "")?.trim() ?: "Unknown Title"
-        // Replace checkPlay with checkLicense(..., "PLAY")
-        if (!LicenseClient.checkLicense(this.name, "PLAY", titleCheck)) {
-            throw Error("LICENSE REQUIRED: Please renew subscription or refresh Repository.")
-        
-        }
+        // Fix: Removed PLAY Log 
 
         val document = app.get(data).document
         val iframeEl = document.selectFirst("div.gmr-embed-responsive iframe, div.movieplay iframe, iframe")

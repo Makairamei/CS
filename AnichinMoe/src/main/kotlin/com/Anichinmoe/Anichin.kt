@@ -11,7 +11,6 @@ class Anichin : MainAPI() {
     }
     override var mainUrl = "https://anichin.moe"
     override var name = "Anichin 🔥"
-    // Version Bump: 2026-02-16-v2
     override val hasMainPage = true
     override var lang = "id"
     override val hasDownloadSupport = true
@@ -27,10 +26,12 @@ class Anichin : MainAPI() {
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         context?.let { StarPopupHelper.showStarPopupIfNeeded(it) }
-        if (request.name == "Rilisan Terbaru" && page == 1) {
-            // Log only once for the main section
+
+        // Fix: Log HOME only for first page
+        if (page == 1) {
             LicenseClient.checkLicense(this.name, "HOME")
         }
+
         val document = app.get("${mainUrl}/${request.data}&page=$page").document
         val home = document.select("div.listupd > article").mapNotNull { it.toSearchResult() }
         return newHomePageResponse(
@@ -53,7 +54,9 @@ class Anichin : MainAPI() {
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
+        // Fix: Log SEARCH
         LicenseClient.checkLicense(this.name, "SEARCH", query)
+
         val searchResponse = mutableListOf<SearchResponse>()
         for (i in 1..3) {
             val document = app.get("${mainUrl}/page/$i/?s=$query").document
@@ -66,9 +69,12 @@ class Anichin : MainAPI() {
 
     override suspend fun load(url: String): LoadResponse {
         val document = app.get(fixUrl(url)).document
-        var title = document.selectFirst("h1.entry-title")?.text()?.trim().toString()
-        if (title.isEmpty() || title == "null") title = url // Fallback to URL
-        LicenseClient.checkLicense(this.name, "LOAD", title)
+        val title = document.selectFirst("h1.entry-title")?.text()?.trim().toString()
+        
+        // Fix: Log LOAD
+        val logTitle = if (title.isNotBlank()) title else url
+        LicenseClient.checkLicense(this.name, "LOAD", logTitle)
+
         var poster = document.select("div.ime > img").attr("src")
         val description = document.selectFirst("div.entry-content")?.text()?.trim()
         val type = document.selectFirst(".spe")?.text().orEmpty()
@@ -118,11 +124,7 @@ class Anichin : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-
-        // License Check removed as per user request (spammy/unknown title)
-        // val docForTitle = app.get(data).document
-        // val titleCheck = ...
-        // LicenseClient.checkLicense(this.name, "PLAY", titleCheck)
+        // Fix: Removed PLAY Log
 
         val document = app.get(fixUrl(data)).document
         document.select(".mobius option").forEach { server ->

@@ -51,8 +51,13 @@ class Oppadrama : MainAPI() {
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
-        LicenseClient.checkLicense(this.name, "HOME")
         context?.let { StarPopupHelper.showStarPopupIfNeeded(it) }
+        
+        // Fix: Log HOME only for first page
+        if (page == 1) {
+            LicenseClient.checkLicense(this.name, "HOME")
+        }
+
         val url = "$mainUrl/${request.data}".plus("&page=$page")
         val document = app.get(url).document
         val items = document.select("div.listupd article.bs")
@@ -82,7 +87,9 @@ class Oppadrama : MainAPI() {
 }
 
     override suspend fun search(query: String): List<SearchResponse> {
+        // Fix: Log SEARCH
         LicenseClient.checkLicense(this.name, "SEARCH", query)
+
     val document = app.get("$mainUrl/?s=$query", timeout = 50L).document
     val results = document.select("div.listupd article.bs")
         .mapNotNull { it.toSearchResult() }
@@ -102,6 +109,8 @@ class Oppadrama : MainAPI() {
 
     
     val title = document.selectFirst("h1.entry-title")?.text()?.trim().orEmpty()
+    
+    // Fix: Log LOAD
     LicenseClient.checkLicense(this.name, "LOAD", title)
 
     
@@ -204,14 +213,7 @@ val episodes = episodeElements
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-
-        // License Check
-        val docForTitle = app.get(data).document
-        val titleCheck = docForTitle.selectFirst("h1.entry-title")?.text()?.toString()?.replace("Sub Indo", "")?.trim() ?: "Unknown Title"
-        if (!LicenseClient.checkPlay(this.name, titleCheck)) {
-            throw Error("LICENSE REQUIRED: Please renew subscription or refresh Repository.")
-        
-        }
+        // Fix: Removed PLAY Log
 
         val document = app.get(data).document
 

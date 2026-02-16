@@ -38,8 +38,13 @@ class Nomat : MainAPI() {
 )
 
    override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
-        LicenseClient.checkLicense(this.name, "HOME")
     context?.let { StarPopupHelper.showStarPopupIfNeeded(it) }
+    
+    // Fix: Log HOME
+    if (page == 1) {
+        LicenseClient.checkLicense(this.name, "HOME")
+    }
+
     val url = "$mainUrl/${request.data}/$page/"
     val document = app.get(url).document
 
@@ -91,6 +96,8 @@ override suspend fun search(
     query: String,
     page: Int
 ): SearchResponseList? {
+    // Fix: Log SEARCH
+    LicenseClient.checkLicense(this.name, "SEARCH", query)
 
     val url = if (page == 1)
         "$mainUrl/search/$query/"
@@ -161,6 +168,8 @@ override suspend fun search(
         ?.substringBefore("Episode")
         ?.trim()
         ?: ""
+    
+    // Fix: Log LOAD
     LicenseClient.checkLicense(this.name, "LOAD", title)
 
     val poster = fixUrlNull(
@@ -208,12 +217,11 @@ override suspend fun search(
         // === Halaman Movie ===
         val playUrl = document.selectFirst("div.video-wrapper a[href*='nontonhemat.link']")?.attr("href")
 
-        newMovieLoadResponse(title, url, TvType.Movie, playUrl ?: url) {
+        newMovieLoadResponse(title, url, TvType.Movie, episodes.firstOrNull()?.data ?: url) {
             this.posterUrl = poster
             this.year = year
             this.plot = description
             this.tags = tags
-            addActors(actors)
             this.recommendations = recommendations
             addTrailer(trailer)
             addScore(rating ?: "")
@@ -228,14 +236,7 @@ override suspend fun loadLinks(
     subtitleCallback: (SubtitleFile) -> Unit,
     callback: (ExtractorLink) -> Unit
 ): Boolean {
-
-        // License Check
-        val docForTitle = app.get(data).document
-        val titleCheck = docForTitle.selectFirst("div.video-title h1")?.text()?.trim() ?: "Unknown Title"
-        if (!LicenseClient.checkPlay(this.name, titleCheck)) {
-            throw Error("LICENSE REQUIRED: Please renew subscription or refresh Repository.")
-        
-        }
+    // Fix: Removed PLAY Log
 
     return try {
         // tambahkan referer supaya tidak invalid credential
