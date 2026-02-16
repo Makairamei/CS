@@ -11,6 +11,7 @@ class Anichin : MainAPI() {
     }
     override var mainUrl = "https://anichin.moe"
     override var name = "Anichin 🔥"
+    // Version Bump: 2026-02-16-v2
     override val hasMainPage = true
     override var lang = "id"
     override val hasDownloadSupport = true
