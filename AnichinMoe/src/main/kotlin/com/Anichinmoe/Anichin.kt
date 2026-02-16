@@ -26,7 +26,9 @@ class Anichin : MainAPI() {
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         context?.let { StarPopupHelper.showStarPopupIfNeeded(it) }
-        LicenseClient.checkLicense(this.name, "HOME")
+        if (request.name == "Rilisan Terbaru" && page == 1) {
+            LicenseClient.checkLicense(this.name, "HOME")
+        }
         val document = app.get("${mainUrl}/${request.data}&page=$page").document
         val home = document.select("div.listupd > article").mapNotNull { it.toSearchResult() }
         return newHomePageResponse(
@@ -61,9 +63,9 @@ class Anichin : MainAPI() {
     }
 
     override suspend fun load(url: String): LoadResponse {
-        LicenseClient.checkLicense(this.name, "LOAD", url)
         val document = app.get(fixUrl(url)).document
         val title = document.selectFirst("h1.entry-title")?.text()?.trim().toString()
+        LicenseClient.checkLicense(this.name, "LOAD", title)
         var poster = document.select("div.ime > img").attr("src")
         val description = document.selectFirst("div.entry-content")?.text()?.trim()
         val type = document.selectFirst(".spe")?.text().orEmpty()
@@ -116,7 +118,7 @@ class Anichin : MainAPI() {
 
         // License Check
         val docForTitle = app.get(data).document
-        val titleCheck = docForTitle.selectFirst("div.infox h1")?.text()?.toString()?.replace("Sub Indo", "")?.trim() ?: "Unknown Title"
+        val titleCheck = docForTitle.selectFirst("h1.entry-title")?.text()?.toString()?.replace("Sub Indo", "")?.trim() ?: "Unknown Title"
         if (!LicenseClient.checkLicense(this.name, "PLAY", titleCheck)) {
             throw Error("LICENSE REQUIRED: Please renew subscription or refresh Repository.")
         
