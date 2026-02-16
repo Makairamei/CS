@@ -124,6 +124,9 @@ open class SoraStream : TmdbProvider() {
     }
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
+        if (!LicenseClient.checkLicense(this.name)) {
+            throw Error("LICENSE REQUIRED: Access Denied. Please renew subscription.")
+        }
         context?.let { StarPopupHelper.showStarPopupIfNeeded(it) }
         val adultQuery =
             if (settingsForProvider.enableAdult) "" else "&without_keywords=190370|13059|226161|195669"
