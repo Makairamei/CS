@@ -197,32 +197,12 @@ override suspend fun loadLinks(
         loadExtractor(httpsify(url), data, subtitleCallback, callback)
     }
 
-    // 1) Direct video
-    document.select("video.playervideo source[src], video source[src]").forEach { s ->
-        val src = s.attr("src").trim()
-        if (src.isBlank()) return@forEach
-
-        found = true
-        callback(
-            newExtractorLink(
-                source = name,
-                name = "$name Direct",
-                url = httpsify(fixUrl(src)),
-                type = INFER_TYPE
-            ) {
-                headers = mapOf("Referer" to data)
-                quality = getQualityFromName(s.attr("size"))
-            }
-        )
-    }
-
-    // 2) Iframe embeds
     document.select(".player-embed iframe[src], .pframe iframe[src], #pembed iframe[src]")
         .mapNotNull { it.getIframeAttr()?.trim() }
         .distinct()
         .forEach { iframe -> handleExtractorUrl(iframe) }
 
-    // 3) Server dropdown (ajax)
+
     val serverOptions = document.select("#server .east_player_option[data-post][data-nume]")
     if (serverOptions.isNotEmpty()) {
         val ajaxUrl = "$mainUrl/wp-admin/admin-ajax.php"
