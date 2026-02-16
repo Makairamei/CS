@@ -6,11 +6,13 @@ import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.INFER_TYPE
 import com.lagradost.cloudstream3.utils.getQualityFromName
+import com.lagradost.cloudstream3.LoadResponse.Companion.addScore  
 import com.lagradost.cloudstream3.utils.httpsify
 import com.lagradost.cloudstream3.utils.loadExtractor
 import com.lagradost.cloudstream3.utils.newExtractorLink
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
+import java.net.URLEncoder
 
 class Winbu : MainAPI() {
     override var mainUrl = "https://winbu.net"
@@ -56,6 +58,9 @@ class Winbu : MainAPI() {
             ?.toInt()
     }
 
+    private fun String.urlEncoded(): String =
+        URLEncoder.encode(this, "UTF-8")
+
     private fun Element.toSearchResult(sectionName: String): SearchResponse? {
     val anchor = selectFirst("a.ml-mask") ?: selectFirst("a[href]") ?: return null
     val href = fixUrl(anchor.attr("href"))
@@ -68,27 +73,23 @@ class Winbu : MainAPI() {
 
     if (title.isBlank()) return null
 
-    val poster = selectFirst("img.mli-thumb, img")
-        ?.getImageAttr()
-        ?.let { fixUrlNull(it) }
+    val poster = selectFirst("img.mli-thumb, img")?.getImageAttr()?.let { fixUrlNull(it) }
 
-    val rating = selectFirst("span.mli-mvi")
-        ?.text()
-        ?.replace("[^0-9.]".toRegex(), "")
-        ?.toFloatOrNull()
-
-    val isFilm = sectionName.contains("Film", ignoreCase = true) ||
-            href.contains("/film/", ignoreCase = true)
+    val isFilm = sectionName.contains("Film", ignoreCase = true) || href.contains("/film/", ignoreCase = true)
 
     return if (isFilm) {
         newMovieSearchResponse(title, href, TvType.Movie) {
             this.posterUrl = poster
-            this.rating = rating
         }
     } else {
+        val episodeText =
+            selectFirst("span.mli-episode")?.text()
+                ?: selectFirst("span.mli-info span")?.text()
+        val episode = parseEpisode(episodeText)
+
         newAnimeSearchResponse(title, href, TvType.Anime) {
             this.posterUrl = poster
-            this.rating = rating
+            if (episode != null) addSub(episode)
         }
     }
 }
@@ -170,6 +171,7 @@ class Winbu : MainAPI() {
             this.plot = description
             this.tags = tags
             this.recommendations = recs
+            addScore(rating)
         }
     } else {
         newMovieLoadResponse(title, url, TvType.Movie, url) {
@@ -177,6 +179,7 @@ class Winbu : MainAPI() {
             this.plot = description
             this.tags = tags
             this.recommendations = recs
+            addScore(rating)
         }
     }
 }
@@ -190,12 +193,13 @@ override suspend fun loadLinks(
     val document = app.get(data).document
     var found = false
 
-    fun handleExtractorUrl(url: String?) {
+    suspend fun handleExtractorUrl(url: String?) {
         if (url.isNullOrBlank()) return
         found = true
         loadExtractor(httpsify(url), data, subtitleCallback, callback)
     }
 
+    // 1) Direct video
     document.select("video.playervideo source[src], video source[src]").forEach { s ->
         val src = s.attr("src").trim()
         if (src.isBlank()) return@forEach
@@ -214,13 +218,13 @@ override suspend fun loadLinks(
         )
     }
 
-   
-    document.select(".player-embed iframe[src], .pframe iframe[src], #pembed iframe[src], iframe[src]")
+    // 2) Iframe embeds
+    document.select(".player-embed iframe[src], .pframe iframe[src], #pembed iframe[src]")
         .mapNotNull { it.getIframeAttr()?.trim() }
         .distinct()
-        .forEach { handleExtractorUrl(it) }
+        .forEach { iframe -> handleExtractorUrl(iframe) }
 
-   
+    // 3) Server dropdown (ajax)
     val serverOptions = document.select("#server .east_player_option[data-post][data-nume]")
     if (serverOptions.isNotEmpty()) {
         val ajaxUrl = "$mainUrl/wp-admin/admin-ajax.php"
@@ -253,26 +257,18 @@ override suspend fun loadLinks(
 
                         val parsed = Jsoup.parse(res)
 
-                        val iframe = parsed.selectFirst("iframe[src]")?.attr("src")?.trim()
-                        if (!iframe.isNullOrBlank()) {
-                            extracted = iframe
-                            break
-                        }
+                        parsed.selectFirst("iframe[src]")?.attr("src")?.trim()
+                            ?.takeIf { it.isNotBlank() }
+                            ?.let { extracted = it; break }
 
-                        val src = parsed.selectFirst("source[src]")?.attr("src")?.trim()
-                        if (!src.isNullOrBlank()) {
-                            extracted = src
-                            break
-                        }
+                        parsed.selectFirst("source[src]")?.attr("src")?.trim()
+                            ?.takeIf { it.isNotBlank() }
+                            ?.let { extracted = it; break }
 
-                        val m = Regex("""https?://[^\s'"]+""").find(res)?.value
-                        if (!m.isNullOrBlank()) {
-                            extracted = m
-                            break
-                        }
-                    } catch (_: Exception) {
-                       
-                    }
+                        Regex("""https?://[^\s'"]+""").find(res)?.value
+                            ?.takeIf { it.isNotBlank() }
+                            ?.let { extracted = it; break }
+                    } catch (_: Exception) { }
                 }
 
                 handleExtractorUrl(extracted)
@@ -280,14 +276,13 @@ override suspend fun loadLinks(
         }
     }
 
-    document.select("#downloadb a[href], .download-eps a[href], a[href][rel*=nofollow]")
-        .mapNotNull { a ->
-            val href = a.attr("href").trim()
-            if (href.isBlank()) null else href
-        }
+    // 4) Download links
+    document.select("#downloadb a[href], .download-eps a[href]")
+        .mapNotNull { it.attr("href").trim().takeIf { h -> h.isNotBlank() } }
         .distinct()
         .forEach { handleExtractorUrl(it) }
 
+    // 5) Fake button fallback
     if (!found) {
         document.select("span.play-fake-btn, .play-fake-btn").forEach { btn ->
             listOf(
@@ -305,18 +300,13 @@ override suspend fun loadLinks(
     if (!found) {
         val html = document.html()
         val extracted = mutableListOf<String>()
-
         listOf(
             Regex("""https?://[^\s'"]+\.m3u8[^\s'"]*""", RegexOption.IGNORE_CASE),
             Regex("""https?://[^\s'"]+\.mp4[^\s'"]*""", RegexOption.IGNORE_CASE),
-            Regex("""https?://[^\s'"]+/embed/[^\s'"]+""", RegexOption.IGNORE_CASE),
-            Regex("""https?://filedon\.[^\s'"]+""", RegexOption.IGNORE_CASE),
-            Regex("""https?://mega\.[^\s'"]+""", RegexOption.IGNORE_CASE),
-            Regex("""https?://gofile\.[^\s'"]+""", RegexOption.IGNORE_CASE)
+            Regex("""https?://[^\s'"]+/embed/[^\s'"]+""", RegexOption.IGNORE_CASE)
         ).forEach { rgx ->
             rgx.findAll(html).forEach { m -> extracted.add(m.value) }
         }
-
         extracted.distinct().forEach { handleExtractorUrl(it) }
     }
 
