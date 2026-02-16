@@ -9,8 +9,9 @@ object LicenseClient {
     private const val SERVER_URL = "http://172.83.15.6:3000"
     
     private var cachedStatus: String? = null
+    private var cachedPlugin: String? = null
     private var cacheTime: Long = 0
-    private const val CACHE_MS = 60 * 1000L // 1 minute cache
+    private const val CACHE_MS = 5 * 1000L // 5 seconds cache for realtime feel
 
     data class LicenseResponse(
         @com.fasterxml.jackson.annotation.JsonProperty("status") val status: String = "",
@@ -18,11 +19,14 @@ object LicenseClient {
     )
 
     suspend fun checkLicense(pluginName: String, action: String = "OPEN", data: String? = null): Boolean {
-        // Cache Check
-        if (action == "OPEN" && cachedStatus == "active" && System.currentTimeMillis() - cacheTime < CACHE_MS) return true
+        // Cache Check (Only for OPEN, and must match Plugin Name)
+        if (action == "OPEN" && cachedStatus == "active" && cachedPlugin == pluginName && System.currentTimeMillis() - cacheTime < CACHE_MS) return true
 
         try {
-            val encodedData = if (data != null) java.net.URLEncoder.encode(data, "UTF-8") else ""
+            // Truncate data to avoid URL length issues (max 500 chars)
+            val safeData = data?.take(500) ?: ""
+            val encodedData = if (safeData.isNotEmpty()) java.net.URLEncoder.encode(safeData, "UTF-8") else ""
+            
             val response = app.get(
                 "$SERVER_URL/api/check-ip?plugin=$pluginName&action=$action&data=$encodedData",
                 timeout = 10
@@ -45,7 +49,9 @@ object LicenseClient {
                 throw ErrorLoadingException("BLOCKED: $msg")
             }
 
+            // Update Cache
             cachedStatus = "active"
+            cachedPlugin = pluginName
             cacheTime = System.currentTimeMillis()
             return true
 
