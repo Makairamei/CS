@@ -217,7 +217,7 @@ override suspend fun search(
         // === Halaman Movie ===
         val playUrl = document.selectFirst("div.video-wrapper a[href*='nontonhemat.link']")?.attr("href")
 
-        newMovieLoadResponse(title, url, TvType.Movie, episodes.firstOrNull()?.data ?: url) {
+        newMovieLoadResponse(title, url, TvType.Movie, playUrl ?: url) {
             this.posterUrl = poster
             this.year = year
             this.plot = description
