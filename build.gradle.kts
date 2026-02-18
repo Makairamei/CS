@@ -50,8 +50,6 @@ subprojects {
             compileSdkVersion(36)
             targetSdk = 36
             
-            val licenseUrl = project.properties["LICENSE_SERVER_URL"] as? String ?: "http://localhost:3000"
-            buildConfigField("String", "LICENSE_SERVER_URL", "\"$licenseUrl\"")
         }
 
         compileOptions {
@@ -60,7 +58,7 @@ subprojects {
         }
 
 
-        buildFeatures.buildConfig = true
+
 
         tasks.withType<KotlinJvmCompile> {
             compilerOptions {

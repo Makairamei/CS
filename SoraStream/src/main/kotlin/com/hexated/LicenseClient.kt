@@ -1,11 +1,10 @@
-﻿package com.hexated
+package com.hexated
 
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
-import com.excloud.BuildConfig
 
 object LicenseClient {
-    private val SERVER_URL = BuildConfig.LICENSE_SERVER_URL.trimEnd('/')
+    private val SERVER_URL = "http://192.168.18.5:3000"
     private val lastCheckTime = mutableMapOf<String, Long>()
 
     suspend fun checkLicense(pluginName: String, action: String = "OPEN", data: String? = null): Boolean {
