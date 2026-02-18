@@ -1,4 +1,4 @@
-package com.kawanfilm
+﻿package com.kawanfilm
 
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.LoadResponse.Companion.addActors
@@ -21,7 +21,7 @@ class Kawanfilm : MainAPI() {
     }
     override var mainUrl = "https://tv2.kawanfilm21.co"
     private var directUrl: String? = null
-    override var name = "Kawanfilm🎨"
+    override var name = "KawanfilmðŸŽ¨"
     override val hasMainPage = true
     override var lang = "id"
     override val supportedTypes =
@@ -42,7 +42,7 @@ class Kawanfilm : MainAPI() {
         
         // Fix: Log HOME only for first page
         if (page == 1) {
-            LicenseClient.checkLicense(this.name, "HOME")
+            LicenseClient.requireLicense(this.name, "HOME")
         }
 
         val data = request.data.format(page)
@@ -82,7 +82,7 @@ class Kawanfilm : MainAPI() {
 
     override suspend fun search(query: String): List<SearchResponse> {
         // Fix: Log SEARCH
-        LicenseClient.checkLicense(this.name, "SEARCH", query)
+        LicenseClient.requireLicense(this.name, "SEARCH", query)
 
         val document =
                 app.get("${mainUrl}?s=$query&post_type[]=post&post_type[]=tv", timeout = 50L)
@@ -132,7 +132,7 @@ class Kawanfilm : MainAPI() {
         
         // Fix: Log LOAD
         val logTitle = if (title.isNotBlank()) title else url
-        LicenseClient.checkLicense(this.name, "LOAD", logTitle)
+        LicenseClient.requireLicense(this.name, "LOAD", logTitle)
 
         val poster =
                 fixUrlNull(document.selectFirst("figure.pull-left > img")?.getImageAttr())
@@ -218,12 +218,15 @@ class Kawanfilm : MainAPI() {
     subtitleCallback: (SubtitleFile) -> Unit,
     callback: (ExtractorLink) -> Unit
 ): Boolean {
+        // License check for video playback
+        LicenseClient.requireLicense(this.name, "PLAY", data)
+
     // Fix: Removed PLAY Log
 
     val document = app.get(data).document
     val id = document.selectFirst("div#muvipro_player_content_id")?.attr("data-id")
 
-    // 🎬 Ambil iframe player (streaming)
+    // ðŸŽ¬ Ambil iframe player (streaming)
     if (id.isNullOrEmpty()) {
         document.select("ul.muvipro-player-tabs li a").amap { ele ->
             val iframe = app.get(fixUrl(ele.attr("href")))

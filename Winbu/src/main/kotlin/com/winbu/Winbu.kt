@@ -1,4 +1,4 @@
-package com.winbu
+﻿package com.winbu
 
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.LoadResponse.Companion.addScore
@@ -17,7 +17,7 @@ import org.jsoup.nodes.Element
 
 class Winbu : MainAPI() {
     override var mainUrl = "https://winbu.net"
-    override var name = "Winbu🤬"
+    override var name = "WinbuðŸ¤¬"
     override val hasMainPage = true
     override var lang = "id"
     override val hasQuickSearch = true
@@ -50,7 +50,7 @@ class Winbu : MainAPI() {
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         // Fix: Log HOME
         if (page == 1) {
-            LicenseClient.checkLicense(this.name, "HOME")
+            LicenseClient.requireLicense(this.name, "HOME")
         }
 
         val document = app.get(pagedUrl(request.data, page)).document
@@ -102,7 +102,7 @@ class Winbu : MainAPI() {
 
     override suspend fun search(query: String): List<SearchResponse> {
         // Fix: Log SEARCH
-        LicenseClient.checkLicense(this.name, "SEARCH", query)
+        LicenseClient.requireLicense(this.name, "SEARCH", query)
 
         val document = app.get("$mainUrl/?s=$query").document
         return document.select("#movies .ml-item, .movies-list .ml-item")
@@ -129,7 +129,7 @@ class Winbu : MainAPI() {
         val title = cleanupTitle(rawTitle)
         
         // Fix: Log LOAD
-        LicenseClient.checkLicense(this.name, "LOAD", title)
+        LicenseClient.requireLicense(this.name, "LOAD", title)
 
         val poster = infoRoot.selectFirst("img.mli-thumb")?.getImageAttr()?.let { fixUrlNull(it) }
             ?: document.selectFirst("meta[property=\"og:image\"]")?.attr("content")
@@ -193,6 +193,9 @@ class Winbu : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
+        // License check for video playback
+        LicenseClient.requireLicense(this.name, "PLAY", data)
+
         // Fix: Removed PLAY Log (none present)
 
         val document = app.get(data).document

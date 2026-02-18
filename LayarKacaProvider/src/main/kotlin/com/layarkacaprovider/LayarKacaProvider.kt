@@ -1,4 +1,4 @@
-package com.layarkacaprovider
+﻿package com.layarkacaprovider
 
 import com.lagradost.api.Log
 import com.lagradost.cloudstream3.*
@@ -17,7 +17,7 @@ class LayarKacaProvider : MainAPI() {
     private var seriesUrl = "https://series.lk21.de"
     private var searchurl= "https://search.lk21.party"
 
-    override var name = "LayarKaca🎞"
+    override var name = "LayarKacaðŸŽž"
     override val hasMainPage = true
     override var lang = "id"
     override val supportedTypes = setOf(
@@ -44,7 +44,7 @@ class LayarKacaProvider : MainAPI() {
         
         // Fix: Log HOME
         if (page == 1) {
-            LicenseClient.checkLicense(this.name, "HOME")
+            LicenseClient.requireLicense(this.name, "HOME")
         }
 
         val document = app.get(request.data + page).document
@@ -96,7 +96,7 @@ class LayarKacaProvider : MainAPI() {
 
     override suspend fun search(query: String): List<SearchResponse> {
         // Fix: Log SEARCH
-        LicenseClient.checkLicense(this.name, "SEARCH", query)
+        LicenseClient.requireLicense(this.name, "SEARCH", query)
 
         val res = app.get("$searchurl/search.php?s=$query").text
         val results = mutableListOf<SearchResponse>()
@@ -134,7 +134,7 @@ class LayarKacaProvider : MainAPI() {
         val title = document.selectFirst("div.movie-info h1")?.text()?.trim().toString()
         
         // Fix: Log LOAD
-        LicenseClient.checkLicense(this.name, "LOAD", title)
+        LicenseClient.requireLicense(this.name, "LOAD", title)
 
         val poster = document.select("meta[property=og:image]").attr("content")
         val tags = document.select("div.tag-list span").map { it.text() }
@@ -205,6 +205,9 @@ class LayarKacaProvider : MainAPI() {
     }
 
          override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
+        // License check for video playback
+        LicenseClient.requireLicense(this.name, "PLAY", data)
+
         // Fix: Removed PLAY Log
 
         val document = app.get(data).document

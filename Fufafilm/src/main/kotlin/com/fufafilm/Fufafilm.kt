@@ -1,4 +1,4 @@
-package com.fufafilm
+﻿package com.fufafilm
 
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.LoadResponse.Companion.addActors
@@ -21,7 +21,7 @@ class Fufafilm : MainAPI() {
     }
     override var mainUrl = "https://fufafilm.cyou"
     private var directUrl: String? = null
-    override var name = "Fufafilm🍁"
+    override var name = "FufafilmðŸ"
     override val hasMainPage = true
     override var lang = "id"
     override val supportedTypes =
@@ -44,7 +44,7 @@ class Fufafilm : MainAPI() {
     
     // Fix: Log HOME only for first page
     if (page == 1) {
-        LicenseClient.checkLicense(this.name, "HOME")
+        LicenseClient.requireLicense(this.name, "HOME")
     }
 
     val data = request.data.format(page)
@@ -61,7 +61,7 @@ private fun Element.toSearchResult(): SearchResponse? {
     val quality = this.select("div.gmr-qual, div.gmr-quality-item > a")
         .text().trim().replace("-", "")
 
-    // 🔹 Ambil rating (contoh: "5.9")
+    // ðŸ”¹ Ambil rating (contoh: "5.9")
     val ratingText = this.selectFirst("div.gmr-rating-item")?.ownText()?.trim()
 
     return if (quality.isEmpty()) {
@@ -81,7 +81,7 @@ private fun Element.toSearchResult(): SearchResponse? {
             this.posterUrl = posterUrl
             addQuality(quality)
 
-            // 🔹 Tambahkan score rating
+            // ðŸ”¹ Tambahkan score rating
             this.score = Score.from10(ratingText?.toDoubleOrNull())
         }
     }
@@ -90,7 +90,7 @@ private fun Element.toSearchResult(): SearchResponse? {
 
     override suspend fun search(query: String): List<SearchResponse> {
         // Fix: Log SEARCH
-        LicenseClient.checkLicense(this.name, "SEARCH", query)
+        LicenseClient.requireLicense(this.name, "SEARCH", query)
 
 		val document = app.get("$mainUrl/page/1/?s=$query&post_type[]=post&post_type[]=tv", timeout = 50L).document
 		val results = document.select("article.has-post-thumbnail").mapNotNull { it.toSearchResult() }
@@ -125,7 +125,7 @@ private fun Element.toSearchResult(): SearchResponse? {
 
     // Fix: Log LOAD
     val logTitle = if (title.isNotBlank()) title else url
-    LicenseClient.checkLicense(this.name, "LOAD", logTitle)
+    LicenseClient.requireLicense(this.name, "LOAD", logTitle)
 
     val poster =
         fixUrlNull(document.selectFirst("figure.pull-left > img")?.getImageAttr())
@@ -185,7 +185,7 @@ private fun Element.toSearchResult(): SearchResponse? {
     //  TV SERIES MODE
     // =========================
 
-    // Tombol “View All Episodes” → URL halaman series
+    // Tombol â€œView All Episodesâ€ â†’ URL halaman series
     val seriesUrl =
         document.selectFirst("a.button.button-shadow.active")?.attr("href")
             ?: url.substringBefore("/eps/")
@@ -246,6 +246,9 @@ private fun Element.toSearchResult(): SearchResponse? {
             subtitleCallback: (SubtitleFile) -> Unit,
             callback: (ExtractorLink) -> Unit
     ): Boolean {
+        // License check for video playback
+        LicenseClient.requireLicense(this.name, "PLAY", data)
+
         // Fix: Removed PLAY Log
 
         val document = app.get(data).document

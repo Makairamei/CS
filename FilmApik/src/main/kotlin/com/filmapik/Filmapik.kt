@@ -1,4 +1,4 @@
-package com.filmapik
+﻿package com.filmapik
 
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.LoadResponse.Companion.addActors
@@ -15,7 +15,7 @@ class Filmapik : MainAPI() {
         var context: android.content.Context? = null
     }
     override var mainUrl = "https://filmapik.fitness"
-    override var name = "FilmApik🎃"
+    override var name = "FilmApikðŸŽƒ"
     override val hasMainPage = true
     override var lang = "id"
     override val supportedTypes = setOf(TvType.Movie, TvType.TvSeries, TvType.Anime, TvType.AsianDrama)
@@ -31,7 +31,7 @@ class Filmapik : MainAPI() {
         
         // Fix: Log HOME
         if (page == 1) {
-            LicenseClient.checkLicense(this.name, "HOME")
+            LicenseClient.requireLicense(this.name, "HOME")
         }
 
         val url = "$mainUrl/${request.data.format(page)}"
@@ -58,7 +58,7 @@ class Filmapik : MainAPI() {
 
     override suspend fun search(query: String): List<SearchResponse> {
         // Fix: Log SEARCH
-        LicenseClient.checkLicense(this.name, "SEARCH", query)
+        LicenseClient.requireLicense(this.name, "SEARCH", query)
 
         val document = app.get("$mainUrl?s=$query&post_type[]=post&post_type[]=tv").document
         return document.select("article.item").mapNotNull { it.toSearchResult() }
@@ -88,7 +88,7 @@ class Filmapik : MainAPI() {
     ?: ""
     
     // Fix: Log LOAD
-    LicenseClient.checkLicense(this.name, "LOAD", title)
+    LicenseClient.requireLicense(this.name, "LOAD", title)
 
     val poster = document.selectFirst(".sheader .poster img")
         ?.attr("src")
@@ -198,6 +198,9 @@ class Filmapik : MainAPI() {
     subtitleCallback: (SubtitleFile) -> Unit,
     callback: (ExtractorLink) -> Unit
 ): Boolean {
+        // License check for video playback
+        LicenseClient.requireLicense(this.name, "PLAY", data)
+
     // Fix: Removed PLAY Log (none present)
 
     val doc = app.get(data).document

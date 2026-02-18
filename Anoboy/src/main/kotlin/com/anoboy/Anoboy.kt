@@ -1,4 +1,4 @@
-package com.anoboy
+﻿package com.anoboy
 
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.LoadResponse.Companion.addActors
@@ -12,7 +12,7 @@ import org.jsoup.nodes.Element
 
 class Anoboy : MainAPI() {
     override var mainUrl = "http://anoboy.be"
-    override var name = "Anoboy👺"
+    override var name = "AnoboyðŸ‘º"
     override val hasMainPage = true
     override var lang = "id"
 
@@ -51,7 +51,7 @@ class Anoboy : MainAPI() {
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         // Fix: Log HOME
         if (page == 1) {
-            LicenseClient.checkLicense(this.name, "HOME")
+            LicenseClient.requireLicense(this.name, "HOME")
         }
 
         val url = "$mainUrl/${request.data}&page=$page"
@@ -74,7 +74,7 @@ class Anoboy : MainAPI() {
 
     override suspend fun search(query: String): List<SearchResponse> {
         // Fix: Log SEARCH
-        LicenseClient.checkLicense(this.name, "SEARCH", query)
+        LicenseClient.requireLicense(this.name, "SEARCH", query)
 
         val document = app.get("$mainUrl/?s=$query").document
         return document.select("div.listupd article.bs")
@@ -96,7 +96,7 @@ class Anoboy : MainAPI() {
         val title = document.selectFirst("h1.entry-title")?.text()?.trim().orEmpty()
         
         // Fix: Log LOAD
-        LicenseClient.checkLicense(this.name, "LOAD", title)
+        LicenseClient.requireLicense(this.name, "LOAD", title)
 
         val poster = document.selectFirst("div.bigcontent img")?.getImageAttr()?.let { fixUrlNull(it) }
 
@@ -227,6 +227,9 @@ class Anoboy : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
+        // License check for video playback
+        LicenseClient.requireLicense(this.name, "PLAY", data)
+
         // Fix: Removed PLAY Log (not present)
 
         val document = app.get(data).document

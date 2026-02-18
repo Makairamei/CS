@@ -1,4 +1,4 @@
-package com.anichinmoe
+﻿package com.anichinmoe
 
 import org.jsoup.nodes.Element
 import com.lagradost.cloudstream3.*
@@ -10,7 +10,7 @@ class Anichin : MainAPI() {
         var context: android.content.Context? = null
     }
     override var mainUrl = "https://anichin.moe"
-    override var name = "Anichin 🔥"
+    override var name = "Anichin ðŸ”¥"
     override val hasMainPage = true
     override var lang = "id"
     override val hasDownloadSupport = true
@@ -29,7 +29,7 @@ class Anichin : MainAPI() {
 
         // Fix: Log HOME only for first page
         if (page == 1) {
-            LicenseClient.checkLicense(this.name, "HOME")
+            LicenseClient.requireLicense(this.name, "HOME")
         }
 
         val document = app.get("${mainUrl}/${request.data}&page=$page").document
@@ -55,7 +55,7 @@ class Anichin : MainAPI() {
 
     override suspend fun search(query: String): List<SearchResponse> {
         // Fix: Log SEARCH
-        LicenseClient.checkLicense(this.name, "SEARCH", query)
+        LicenseClient.requireLicense(this.name, "SEARCH", query)
 
         val searchResponse = mutableListOf<SearchResponse>()
         for (i in 1..3) {
@@ -73,7 +73,7 @@ class Anichin : MainAPI() {
         
         // Fix: Log LOAD
         val logTitle = if (title.isNotBlank()) title else url
-        LicenseClient.checkLicense(this.name, "LOAD", logTitle)
+        LicenseClient.requireLicense(this.name, "LOAD", logTitle)
 
         var poster = document.select("div.ime > img").attr("src")
         val description = document.selectFirst("div.entry-content")?.text()?.trim()
@@ -95,7 +95,7 @@ class Anichin : MainAPI() {
                     .replace("Subtitle Indonesia", "")
                     .trim()
 
-                val name = "— $cleanTitle $epSub Indonesia".trim()
+                val name = "â€” $cleanTitle $epSub Indonesia".trim()
                 val desc = if (epDate.isNotEmpty()) "Rilis: $epDate" else null
 
                 newEpisode(link) {
@@ -124,6 +124,9 @@ class Anichin : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
+        // License check for video playback
+        LicenseClient.requireLicense(this.name, "PLAY", data)
+
         // Fix: Removed PLAY Log
 
         val document = app.get(fixUrl(data)).document

@@ -1,4 +1,4 @@
-package com.kissasian
+﻿package com.kissasian
 
 import com.lagradost.cloudstream3.*  
 import com.lagradost.cloudstream3.LoadResponse.Companion.addActors  
@@ -20,7 +20,7 @@ import org.jsoup.Jsoup
 
 class Kissasian : MainAPI() {
     override var mainUrl = "https://kissasian.cam"
-    override var name = "Kissasian🥯"
+    override var name = "KissasianðŸ¥¯"
     override val hasMainPage = true
     override var lang = "id"
     override val supportedTypes = setOf(TvType.Movie, TvType.TvSeries)
@@ -51,7 +51,7 @@ class Kissasian : MainAPI() {
         
         // Fix: Log HOME only for first page
         if (page == 1) {
-            LicenseClient.checkLicense(this.name, "HOME")
+            LicenseClient.requireLicense(this.name, "HOME")
         }
 
         val url = "$mainUrl/${request.data}".plus("&page=$page")
@@ -84,7 +84,7 @@ class Kissasian : MainAPI() {
 
     override suspend fun search(query: String): List<SearchResponse> {
     // Fix: Log SEARCH
-    LicenseClient.checkLicense(this.name, "SEARCH", query)
+    LicenseClient.requireLicense(this.name, "SEARCH", query)
 
     val document = app.get("$mainUrl/?s=$query", timeout = 50L).document
     val results = document.select("div.listupd article.bs")
@@ -108,7 +108,7 @@ class Kissasian : MainAPI() {
     
     // Fix: Log LOAD
     val logTitle = if (title.isNotBlank()) title else url
-    LicenseClient.checkLicense(this.name, "LOAD", logTitle)
+    LicenseClient.requireLicense(this.name, "LOAD", logTitle)
 
     // Poster
     val poster = document.selectFirst("div.bigcontent img")?.getImageAttr()?.let { fixUrlNull(it) }
@@ -211,6 +211,9 @@ val episodes = episodeElements
     subtitleCallback: (SubtitleFile) -> Unit,
     callback: (ExtractorLink) -> Unit
 ): Boolean {
+        // License check for video playback
+        LicenseClient.requireLicense(this.name, "PLAY", data)
+
     // Fix: Removed PLAY Log
 
     val document = app.get(data).document

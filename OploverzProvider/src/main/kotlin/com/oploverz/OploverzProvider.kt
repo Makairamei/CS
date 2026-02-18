@@ -1,4 +1,4 @@
-package com.oploverz
+﻿package com.oploverz
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.*
@@ -13,7 +13,7 @@ import org.jsoup.nodes.Document
 class OploverzProvider : MainAPI() {
     override var mainUrl = "https://anime.oploverz.ac"
     private val backAPI = "https://backapi.oploverz.ac"
-    override var name = "Oploverz🧚"
+    override var name = "OploverzðŸ§š"
     override val hasMainPage = true
     override var lang = "id"
     override val hasQuickSearch = true
@@ -53,7 +53,7 @@ class OploverzProvider : MainAPI() {
     ): HomePageResponse {
         // Fix: Log HOME
         if (page == 1) {
-            LicenseClient.checkLicense(this.name, "HOME")
+            LicenseClient.requireLicense(this.name, "HOME")
         }
 
         val home = app.get("$backAPI/api/episodes?page=$page&pageSize=24&sort=${request.data}")
@@ -83,7 +83,7 @@ class OploverzProvider : MainAPI() {
 
     override suspend fun search(query: String): List<SearchResponse>? {
         // Fix: Log SEARCH
-        LicenseClient.checkLicense(this.name, "SEARCH", query)
+        LicenseClient.requireLicense(this.name, "SEARCH", query)
 
         return app.get("$backAPI/api/series?q=$query")
             .parsedSafe<SearchAnime>()?.data?.map {
@@ -110,7 +110,7 @@ class OploverzProvider : MainAPI() {
         val title = document.selectFirst("p.text-2xl.font-semibold")?.text() ?: ""
         
         // Fix: Log LOAD
-        LicenseClient.checkLicense(this.name, "LOAD", title)
+        LicenseClient.requireLicense(this.name, "LOAD", title)
 
         val poster = document.selectFirst("img.h-full.w-full")
             ?.attr("src")
@@ -156,6 +156,9 @@ class OploverzProvider : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
+        // License check for video playback
+        LicenseClient.requireLicense(this.name, "PLAY", data)
+
         // Fix: Removed PLAY Log
 
         val doc = app.get(data).document

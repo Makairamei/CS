@@ -1,4 +1,4 @@
-package com.hexated
+﻿package com.hexated
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.api.Log
@@ -21,7 +21,7 @@ class IdlixProvider : MainAPI() {
     }
     override var mainUrl = "https://tv11.idlixku.com"
     private var directUrl = mainUrl
-    override var name = "Idlix🎄"
+    override var name = "IdlixðŸŽ„"
     override val hasMainPage = true
     override var lang = "id"
     override val hasDownloadSupport = true
@@ -60,7 +60,7 @@ class IdlixProvider : MainAPI() {
         
         // Fix: Log HOME only for first page
         if (page == 1) {
-            LicenseClient.checkLicense(this.name, "HOME")
+            LicenseClient.requireLicense(this.name, "HOME")
         }
 
         val url = request.data.split("?")
@@ -116,7 +116,7 @@ class IdlixProvider : MainAPI() {
 
     override suspend fun search(query: String, page: Int): SearchResponseList? {
         // Fix: Log SEARCH
-        LicenseClient.checkLicense(this.name, "SEARCH", query)
+        LicenseClient.requireLicense(this.name, "SEARCH", query)
 
         val req = app.get("$mainUrl/search/$query/page/$page")
         mainUrl = getBaseUrl(req.url)
@@ -153,7 +153,7 @@ class IdlixProvider : MainAPI() {
         
         // Fix: Log LOAD
         val logTitle = if (title.isNotBlank()) title else url
-        LicenseClient.checkLicense(this.name, "LOAD", logTitle)
+        LicenseClient.requireLicense(this.name, "LOAD", logTitle)
 
         val images = document.select("div.g-item")
 
@@ -233,6 +233,9 @@ class IdlixProvider : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
+        // License check for video playback
+        LicenseClient.requireLicense(this.name, "PLAY", data)
+
         // Fix: Removed PLAY Log
 
         val document = app.get(data).document

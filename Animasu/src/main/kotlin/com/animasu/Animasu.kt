@@ -1,4 +1,4 @@
-package com.animasu
+﻿package com.animasu
 
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.LoadResponse.Companion.addAniListId
@@ -12,7 +12,7 @@ import org.jsoup.nodes.Element
 
 class Animasu : MainAPI() {
     override var mainUrl = "https://v1.animasu.top"
-    override var name = "Animasu🐰"
+    override var name = "AnimasuðŸ°"
     override val hasMainPage = true
     override var lang = "id"
     override val hasDownloadSupport = true
@@ -55,7 +55,7 @@ class Animasu : MainAPI() {
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         // Fix: Log HOME
         if (page == 1) {
-            LicenseClient.checkLicense(this.name, "HOME")
+            LicenseClient.requireLicense(this.name, "HOME")
         }
 
         val document = app.get("$mainUrl/pencarian/?${request.data}&halaman=$page").document
@@ -97,7 +97,7 @@ class Animasu : MainAPI() {
 
     override suspend fun search(query: String): List<SearchResponse> {
         // Fix: Log SEARCH
-        LicenseClient.checkLicense(this.name, "SEARCH", query)
+        LicenseClient.requireLicense(this.name, "SEARCH", query)
 
         return app.get("$mainUrl/?s=$query").document.select("div.listupd div.bs").map {
             it.toSearchResult()
@@ -111,7 +111,7 @@ class Animasu : MainAPI() {
             document.selectFirst("div.infox h1")?.text().toString().replace("Sub Indo", "").trim()
             
         // Fix: Log LOAD
-        LicenseClient.checkLicense(this.name, "LOAD", title)
+        LicenseClient.requireLicense(this.name, "LOAD", title)
 
         val poster = document.selectFirst("div.bigcontent img")?.getImageAttr()
 
@@ -152,6 +152,9 @@ class Animasu : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
+        // License check for video playback
+        LicenseClient.requireLicense(this.name, "PLAY", data)
+
         // Fix: Removed PLAY Log 
 
         val document = app.get(data).document

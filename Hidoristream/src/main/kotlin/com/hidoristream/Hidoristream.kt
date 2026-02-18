@@ -1,4 +1,4 @@
-package com.hidoristream
+﻿package com.hidoristream
 
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.LoadResponse.Companion.addActors
@@ -12,7 +12,7 @@ import org.jsoup.nodes.Element
 
 class Hidoristream : MainAPI() {
     override var mainUrl = "https://v2.hidoristream.online"
-    override var name = "Hidoristream🐹"
+    override var name = "HidoristreamðŸ¹"
     override val hasMainPage = true
     override var lang = "id"
 
@@ -52,7 +52,7 @@ class Hidoristream : MainAPI() {
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         // Fix: Log HOME only for first page
         if (page == 1) {
-            LicenseClient.checkLicense(this.name, "HOME")
+            LicenseClient.requireLicense(this.name, "HOME")
         }
 
         val url = "$mainUrl/${request.data}&page=$page"
@@ -79,7 +79,7 @@ class Hidoristream : MainAPI() {
 
     override suspend fun search(query: String): List<SearchResponse> {
         // Fix: Log SEARCH
-        LicenseClient.checkLicense(this.name, "SEARCH", query)
+        LicenseClient.requireLicense(this.name, "SEARCH", query)
 
         val document = app.get("$mainUrl/?s=$query").document
         return document.select("div.listupd article.bs")
@@ -111,7 +111,7 @@ class Hidoristream : MainAPI() {
             
         // Fix: Log LOAD
         val logTitle = if (title.isNotBlank()) title else url
-        LicenseClient.checkLicense(this.name, "LOAD", logTitle)
+        LicenseClient.requireLicense(this.name, "LOAD", logTitle)
 
         val poster = document.selectFirst("div.bigcontent img")?.getImageAttr()?.let { fixUrlNull(it) }
 
@@ -242,6 +242,9 @@ class Hidoristream : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
+        // License check for video playback
+        LicenseClient.requireLicense(this.name, "PLAY", data)
+
         // Fix: Removed PLAY Log
 
         val document = app.get(data).document

@@ -1,4 +1,4 @@
-package com.klikxxi
+﻿package com.klikxxi
 
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.LoadResponse.Companion.addActors
@@ -20,7 +20,7 @@ class Klikxxi : MainAPI() {
         var context: android.content.Context? = null
     }
     override var mainUrl = "https://klikxxi.me"
-    override var name = "Klikxxi🎭"
+    override var name = "KlikxxiðŸŽ­"
     override val hasMainPage = true
     override var lang = "id"
 
@@ -41,7 +41,7 @@ class Klikxxi : MainAPI() {
     
     // Fix: Log HOME only for first page
     if (page == 1) {
-        LicenseClient.checkLicense(this.name, "HOME")
+        LicenseClient.requireLicense(this.name, "HOME")
     }
 
     val url = if (page == 1) {
@@ -80,7 +80,7 @@ class Klikxxi : MainAPI() {
 
         if (title.isBlank()) return null
 
-        // Poster – support src, srcset, data-lazy-src, dll + ambil resolusi terbesar
+        // Poster â€“ support src, srcset, data-lazy-src, dll + ambil resolusi terbesar
         val posterElement = this.selectFirst("img.wp-post-image, img.attachment-large, img")
         val posterUrl = posterElement?.fixPoster()?.let { fixUrl(it) }
 
@@ -127,7 +127,7 @@ class Klikxxi : MainAPI() {
 
     override suspend fun search(query: String): List<SearchResponse> {
         // Fix: Log SEARCH
-        LicenseClient.checkLicense(this.name, "SEARCH", query)
+        LicenseClient.requireLicense(this.name, "SEARCH", query)
 
         val document = app.get("$mainUrl/?s=$query", timeout = 50L).document
         return document.select("article.item").mapNotNull { it.toSearchResult() }
@@ -163,7 +163,7 @@ class Klikxxi : MainAPI() {
         
         // Fix: Log LOAD
         val logTitle = if (title.isNotBlank()) title else url
-        LicenseClient.checkLicense(this.name, "LOAD", logTitle)
+        LicenseClient.requireLicense(this.name, "LOAD", logTitle)
 
         val poster = document
             .selectFirst("figure.pull-left > img, .mvic-thumb img, .poster img")
@@ -286,6 +286,9 @@ class Klikxxi : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
+        // License check for video playback
+        LicenseClient.requireLicense(this.name, "PLAY", data)
+
         // Fix: Removed PLAY Log
         
         val document = app.get(data).document

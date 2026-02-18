@@ -1,4 +1,4 @@
-package com.hexated
+﻿package com.hexated
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.hexated.SoraExtractor.invokeGomovies
@@ -30,7 +30,7 @@ import kotlin.math.roundToInt
 
 
 open class SoraStream : TmdbProvider() {
-    override var name = "SoraStream🥩"
+    override var name = "SoraStreamðŸ¥©"
     override val hasMainPage = true
     override val instantLinkLoading = true
     override val useMetaLoadResponse = true
@@ -128,7 +128,7 @@ open class SoraStream : TmdbProvider() {
         
         // Fix: Log HOME
         if (page == 1) {
-            LicenseClient.checkLicense(this.name, "HOME")
+            LicenseClient.requireLicense(this.name, "HOME")
         }
 
         val adultQuery =
@@ -156,7 +156,7 @@ open class SoraStream : TmdbProvider() {
 
     override suspend fun search(query: String): List<SearchResponse>? {
         // Fix: Log SEARCH
-        LicenseClient.checkLicense(this.name, "SEARCH", query)
+        LicenseClient.requireLicense(this.name, "SEARCH", query)
 
         return app.get("$tmdbAPI/search/multi?api_key=$apiKey&language=en-US&query=$query&page=1&include_adult=${settingsForProvider.enableAdult}")
             .parsedSafe<Results>()?.results?.mapNotNull { media ->
@@ -195,7 +195,7 @@ open class SoraStream : TmdbProvider() {
         val title = res.title ?: res.name ?: return null
         
         // Fix: Log LOAD
-        LicenseClient.checkLicense(this.name, "LOAD", title)
+        LicenseClient.requireLicense(this.name, "LOAD", title)
 
         val poster = getOriImageUrl(res.posterPath)
         val bgPoster = getOriImageUrl(res.backdropPath)
@@ -256,7 +256,7 @@ open class SoraStream : TmdbProvider() {
                             ).toJson()
                         ) {
                             this.name =
-                                eps.name + if (isUpcoming(eps.airDate)) " • [UPCOMING]" else ""
+                                eps.name + if (isUpcoming(eps.airDate)) " â€¢ [UPCOMING]" else ""
                             this.season = eps.seasonNumber
                             this.episode = eps.episodeNumber
                             this.posterUrl = getImageUrl(eps.stillPath)
@@ -332,6 +332,9 @@ open class SoraStream : TmdbProvider() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
+        // License check for video playback
+        LicenseClient.requireLicense(this.name, "PLAY", data)
+
         // Fix: Removed PLAY Log
 
         val res = parseJson<LinkData>(data)

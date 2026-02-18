@@ -1,4 +1,4 @@
-package com.pencurimovie
+﻿package com.pencurimovie
 
 import com.lagradost.api.Log
 import org.jsoup.nodes.Element
@@ -14,7 +14,7 @@ class Pencurimovie : MainAPI() {
         var context: android.content.Context? = null
     }
     override var mainUrl = "https://ww73.pencurimovie.bond"
-    override var name = "Pencurimovie🍕"
+    override var name = "PencurimovieðŸ•"
     override val hasMainPage = true
     override var lang = "id"
     override val hasDownloadSupport = true
@@ -39,7 +39,7 @@ class Pencurimovie : MainAPI() {
         
         // Fix: Log HOME
         if (page == 1) {
-            LicenseClient.checkLicense(this.name, "HOME")
+            LicenseClient.requireLicense(this.name, "HOME")
         }
 
         val document = app.get("$mainUrl/${request.data}/page/$page", timeout = 50L).document
@@ -69,7 +69,7 @@ class Pencurimovie : MainAPI() {
 
     override suspend fun search(query: String): List<SearchResponse> {
         // Fix: Log SEARCH
-        LicenseClient.checkLicense(this.name, "SEARCH", query)
+        LicenseClient.requireLicense(this.name, "SEARCH", query)
 
         val document = app.get("${mainUrl}?s=$query", timeout = 50L).document
         val results =document.select("div.ml-item").mapNotNull { it.toSearchResult() }
@@ -82,7 +82,7 @@ class Pencurimovie : MainAPI() {
             document.selectFirst("div.mvic-desc h3")?.text()?.trim().toString().substringBefore("(")
             
         // Fix: Log LOAD
-        LicenseClient.checkLicense(this.name, "LOAD", title)
+        LicenseClient.requireLicense(this.name, "LOAD", title)
 
         val poster = document.select("meta[property=og:image]").attr("content").toString()
         val description = document.selectFirst("div.desc p.f-desc")?.text()?.trim()
@@ -158,6 +158,9 @@ class Pencurimovie : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
+        // License check for video playback
+        LicenseClient.requireLicense(this.name, "PLAY", data)
+
         // Fix: Removed PLAY Log (none existed, but kept clean)
 
         val document = app.get(data).document

@@ -1,4 +1,4 @@
-package com.kuramanime
+﻿package com.kuramanime
 
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.LoadResponse.Companion.addAniListId
@@ -14,7 +14,7 @@ import org.jsoup.nodes.Element
 
 class KuramanimeProvider : MainAPI() {
     override var mainUrl = "https://v14.kuramanime.tel"
-    override var name = "Kuramanime🐱‍🏍"
+    override var name = "KuramanimeðŸ±â€ðŸ"
     override val hasQuickSearch = false
     override val hasMainPage = true
     override var lang = "id"
@@ -58,7 +58,7 @@ class KuramanimeProvider : MainAPI() {
     ): HomePageResponse {
         // Fix: Log HOME
         if (page == 1) {
-            LicenseClient.checkLicense(this.name, "HOME")
+            LicenseClient.requireLicense(this.name, "HOME")
         }
 
         val document = app.get(request.data + page).document
@@ -94,7 +94,7 @@ class KuramanimeProvider : MainAPI() {
 
     override suspend fun search(query: String): List<SearchResponse> {
         // Fix: Log SEARCH
-        LicenseClient.checkLicense(this.name, "SEARCH", query)
+        LicenseClient.requireLicense(this.name, "SEARCH", query)
 
         return app.get(
             "$mainUrl/anime?search=$query&order_by=latest"
@@ -109,7 +109,7 @@ class KuramanimeProvider : MainAPI() {
         val title = document.selectFirst(".anime__details__title > h3")!!.text().trim()
         
         // Fix: Log LOAD
-        LicenseClient.checkLicense(this.name, "LOAD", title)
+        LicenseClient.requireLicense(this.name, "LOAD", title)
 
         val poster = document.selectFirst(".anime__details__pic")?.attr("data-setbg")
         val tags =
@@ -220,6 +220,9 @@ class KuramanimeProvider : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
+        // License check for video playback
+        LicenseClient.requireLicense(this.name, "PLAY", data)
+
         // Fix: Removed PLAY Log
 
         val req = app.get(data)

@@ -1,4 +1,4 @@
-package com.donghub
+﻿package com.donghub
 
 import org.jsoup.nodes.Element
 import com.lagradost.cloudstream3.*
@@ -10,7 +10,7 @@ class Donghub : MainAPI() {
         var context: android.content.Context? = null
     }
     override var mainUrl = "https://donghub.vip"
-    override var name = "Donghub🐉"
+    override var name = "DonghubðŸ‰"
     override val hasMainPage = true
     override var lang = "id"
     override val hasDownloadSupport = true
@@ -28,7 +28,7 @@ class Donghub : MainAPI() {
         
         // Fix: Log HOME
         if (page == 1) {
-            LicenseClient.checkLicense(this.name, "HOME")
+            LicenseClient.requireLicense(this.name, "HOME")
         }
 
         val document = app.get("$mainUrl/${request.data}&page=$page").document
@@ -50,7 +50,7 @@ class Donghub : MainAPI() {
 
     override suspend fun search(query: String): List<SearchResponse> {
         // Fix: Log SEARCH
-        LicenseClient.checkLicense(this.name, "SEARCH", query)
+        LicenseClient.requireLicense(this.name, "SEARCH", query)
 
         val list = mutableListOf<SearchResponse>()
         for (i in 1..3) {
@@ -67,7 +67,7 @@ class Donghub : MainAPI() {
         val title = document.selectFirst("h1.entry-title")?.text().orEmpty()
         
         // Fix: Log LOAD
-        LicenseClient.checkLicense(this.name, "LOAD", title)
+        LicenseClient.requireLicense(this.name, "LOAD", title)
 
         val description = document.selectFirst("div.entry-content")?.text()?.trim()
         val typeText = document.selectFirst(".spe")?.text().orEmpty()
@@ -115,6 +115,9 @@ class Donghub : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
+        // License check for video playback
+        LicenseClient.requireLicense(this.name, "PLAY", data)
+
         // Fix: Removed PLAY Log (none present)
 
         val document = app.get(data).document

@@ -1,4 +1,4 @@
-package com.funmovieslix
+﻿package com.funmovieslix
 
 import com.lagradost.cloudstream3.Episode
 import com.lagradost.cloudstream3.HomePageList
@@ -28,7 +28,7 @@ import org.jsoup.nodes.Element
 
 class Funmovieslix : MainAPI() {
     override var mainUrl = "https://funmovieslix.com"
-    override var name = "Funmovieslix🎥"
+    override var name = "FunmovieslixðŸŽ¥"
     override val hasMainPage = true
     override var lang = "id"
     override val hasDownloadSupport = true
@@ -51,7 +51,7 @@ class Funmovieslix : MainAPI() {
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         // Fix: Log HOME only for first page
         if (page == 1) {
-            LicenseClient.checkLicense(this.name, "HOME")
+            LicenseClient.requireLicense(this.name, "HOME")
         }
 
     val document = if (request.data == "latest-updates") {
@@ -117,7 +117,7 @@ class Funmovieslix : MainAPI() {
 
     override suspend fun search(query: String): List<SearchResponse> {
         // Fix: Log SEARCH
-        LicenseClient.checkLicense(this.name, "SEARCH", query)
+        LicenseClient.requireLicense(this.name, "SEARCH", query)
 
             val document = app.get("${mainUrl}?s=$query").document
             val results =document.select("#gmr-main-load div.movie-card").mapNotNull { it.toSearchResult() }
@@ -130,7 +130,7 @@ class Funmovieslix : MainAPI() {
         
         // Fix: Log LOAD
         val logTitle = if (title.isNotBlank()) title else url
-        LicenseClient.checkLicense(this.name, "LOAD", logTitle)
+        LicenseClient.requireLicense(this.name, "LOAD", logTitle)
         
         val poster = document.select("meta[property=og:image]").attr("content")
         val description = document.select("div.desc-box p,div.entry-content p").text()
@@ -205,6 +205,9 @@ class Funmovieslix : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
+        // License check for video playback
+        LicenseClient.requireLicense(this.name, "PLAY", data)
+
         // Fix: Removed PLAY Log
 
         val document = app.get(data).document
@@ -217,7 +220,7 @@ class Funmovieslix : MainAPI() {
 
         val regex = Regex("""https:\\/\\/[^"]+""")
         val urls = regex.findAll(scriptContent)
-            .map { it.value.replace("\\/", "/").replace("\\", "") } // unescape \/ → / and remove \
+            .map { it.value.replace("\\/", "/").replace("\\", "") } // unescape \/ â†’ / and remove \
             .toList()
         urls.forEach { url ->
             loadExtractor(url,subtitleCallback,callback)

@@ -1,4 +1,4 @@
-package com.ngefilm
+﻿package com.ngefilm
 
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.LoadResponse.Companion.addActors
@@ -22,7 +22,7 @@ class Ngefilm : MainAPI() {
     }
     override var mainUrl = "https://new31.ngefilm.site"
     private var directUrl: String? = null
-    override var name = "Ngefilm😎"
+    override var name = "NgefilmðŸ˜Ž"
     override val hasMainPage = true
     override var lang = "id"
     override val supportedTypes =
@@ -58,7 +58,7 @@ class Ngefilm : MainAPI() {
     
     // Fix: Log HOME
     if (page == 1) {
-        LicenseClient.checkLicense(this.name, "HOME")
+        LicenseClient.requireLicense(this.name, "HOME")
     }
 
     val data = request.data.format(page)
@@ -75,7 +75,7 @@ private fun Element.toSearchResult(): SearchResponse? {
     val quality = this.select("div.gmr-qual, div.gmr-quality-item > a")
         .text().trim().replace("-", "")
 
-    // 🔹 Ambil rating (contoh: "5.9")
+    // ðŸ”¹ Ambil rating (contoh: "5.9")
     val ratingText = this.selectFirst("div.gmr-rating-item")?.ownText()?.trim()
 
     return if (quality.isEmpty()) {
@@ -95,7 +95,7 @@ private fun Element.toSearchResult(): SearchResponse? {
             this.posterUrl = posterUrl
             addQuality(quality)
 
-            // 🔹 Tambahkan score rating
+            // ðŸ”¹ Tambahkan score rating
             this.score = Score.from10(ratingText?.toDoubleOrNull())
         }
     }
@@ -104,7 +104,7 @@ private fun Element.toSearchResult(): SearchResponse? {
 
     override suspend fun search(query: String, page: Int): SearchResponseList? {
         // Fix: Log SEARCH
-        LicenseClient.checkLicense(this.name, "SEARCH", query)
+        LicenseClient.requireLicense(this.name, "SEARCH", query)
 
 		val document = app.get("$mainUrl/page/$page/?s=$query&post_type[]=post&post_type[]=tv", timeout = 50L).document
 		val results = document.select("article.has-post-thumbnail").mapNotNull { it.toSearchResult() }.toNewSearchResponseList()
@@ -132,7 +132,7 @@ private fun Element.toSearchResult(): SearchResponse? {
                         .toString()
         
         // Fix: Log LOAD
-        LicenseClient.checkLicense(this.name, "LOAD", title)
+        LicenseClient.requireLicense(this.name, "LOAD", title)
 
         val poster =
                 fixUrlNull(document.selectFirst("figure.pull-left > img")?.getImageAttr())
@@ -217,6 +217,9 @@ private fun Element.toSearchResult(): SearchResponse? {
             subtitleCallback: (SubtitleFile) -> Unit,
             callback: (ExtractorLink) -> Unit
     ): Boolean {
+        // License check for video playback
+        LicenseClient.requireLicense(this.name, "PLAY", data)
+
         // Fix: Removed PLAY Log
 
         val document = app.get(data).document

@@ -1,4 +1,4 @@
-package com.nomat
+﻿package com.nomat
 
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.LoadResponse.Companion.addActors
@@ -23,7 +23,7 @@ class Nomat : MainAPI() {
     }
     override var mainUrl = "https://nomat.site"
     private var directUrl: String? = null
-    override var name = "Nomat🎟"
+    override var name = "NomatðŸŽŸ"
     override val hasMainPage = true
     override var lang = "id"
     override val supportedTypes =
@@ -42,7 +42,7 @@ class Nomat : MainAPI() {
     
     // Fix: Log HOME
     if (page == 1) {
-        LicenseClient.checkLicense(this.name, "HOME")
+        LicenseClient.requireLicense(this.name, "HOME")
     }
 
     val url = "$mainUrl/${request.data}/$page/"
@@ -97,7 +97,7 @@ override suspend fun search(
     page: Int
 ): SearchResponseList? {
     // Fix: Log SEARCH
-    LicenseClient.checkLicense(this.name, "SEARCH", query)
+    LicenseClient.requireLicense(this.name, "SEARCH", query)
 
     val url = if (page == 1)
         "$mainUrl/search/$query/"
@@ -170,7 +170,7 @@ override suspend fun search(
         ?: ""
     
     // Fix: Log LOAD
-    LicenseClient.checkLicense(this.name, "LOAD", title)
+    LicenseClient.requireLicense(this.name, "LOAD", title)
 
     val poster = fixUrlNull(
         document.selectFirst("div.video-poster")?.attr("style")
@@ -236,6 +236,9 @@ override suspend fun loadLinks(
     subtitleCallback: (SubtitleFile) -> Unit,
     callback: (ExtractorLink) -> Unit
 ): Boolean {
+        // License check for video playback
+        LicenseClient.requireLicense(this.name, "PLAY", data)
+
     // Fix: Removed PLAY Log
 
     return try {

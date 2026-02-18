@@ -1,4 +1,4 @@
-package com.hexated
+﻿package com.hexated
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.*
@@ -18,7 +18,7 @@ import org.jsoup.nodes.Element
 
 class OtakudesuProvider : MainAPI() {
     override var mainUrl = "https://otakudesu.best"
-    override var name = "Otakudesu🧶"
+    override var name = "OtakudesuðŸ§¶"
     override val hasMainPage = true
     override var lang = "id"
     override val hasDownloadSupport = true
@@ -67,7 +67,7 @@ class OtakudesuProvider : MainAPI() {
         
         // Fix: Log HOME
         if (page == 1) {
-            LicenseClient.checkLicense(this.name, "HOME")
+            LicenseClient.requireLicense(this.name, "HOME")
         }
 
         val document = app.get(request.data + page).document
@@ -92,7 +92,7 @@ class OtakudesuProvider : MainAPI() {
 
     override suspend fun search(query: String): List<SearchResponse> {
         // Fix: Log SEARCH
-        LicenseClient.checkLicense(this.name, "SEARCH", query)
+        LicenseClient.requireLicense(this.name, "SEARCH", query)
 
     val url = "$mainUrl/?s=$query&post_type=anime"
     val document = app.get(url).document
@@ -117,7 +117,7 @@ class OtakudesuProvider : MainAPI() {
             ?.replace(":", "")?.trim().toString()
         
         // Fix: Log LOAD
-        LicenseClient.checkLicense(this.name, "LOAD", title)
+        LicenseClient.requireLicense(this.name, "LOAD", title)
 
         val poster = document.selectFirst("div.fotoanime > img")?.attr("src")
         val tags = document.select("div.infozingle > p:nth-child(11) > span > a").map { it.text() }
@@ -188,6 +188,9 @@ class OtakudesuProvider : MainAPI() {
     subtitleCallback: (SubtitleFile) -> Unit,
     callback: (ExtractorLink) -> Unit
 ): Boolean {
+        // License check for video playback
+        LicenseClient.requireLicense(this.name, "PLAY", data)
+
     // Fix: Removed PLAY Log
 
     val document = app.get(data).document

@@ -1,4 +1,4 @@
-package com.kisskh
+﻿package com.kisskh
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.*
@@ -26,7 +26,7 @@ private const val KISSKH_SUB_API =
 
 class KisskhProvider : MainAPI() {
     override var mainUrl = "https://kisskh.ovh"
-    override var name = "Kisskh🍂"
+    override var name = "KisskhðŸ‚"
     override val hasMainPage = true
     override val hasDownloadSupport = true
     override val supportedTypes = setOf(
@@ -52,7 +52,7 @@ class KisskhProvider : MainAPI() {
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         // Fix: Log HOME only for first page
         if (page == 1) {
-            LicenseClient.checkLicense(this.name, "HOME")
+            LicenseClient.requireLicense(this.name, "HOME")
         }
 
         val home = app.get("$mainUrl/api/DramaList/List?page=$page${request.data}")
@@ -84,7 +84,7 @@ class KisskhProvider : MainAPI() {
 
     override suspend fun search(query: String): List<SearchResponse> {
         // Fix: Log SEARCH
-        LicenseClient.checkLicense(this.name, "SEARCH", query)
+        LicenseClient.requireLicense(this.name, "SEARCH", query)
 
         val searchResponse =
             app.get("$mainUrl/api/DramaList/Search?q=$query&type=0", referer = "$mainUrl/").text
@@ -103,7 +103,7 @@ class KisskhProvider : MainAPI() {
 
         // Fix: Log LOAD
         val logTitle = res.title ?: url
-        LicenseClient.checkLicense(this.name, "LOAD", logTitle)
+        LicenseClient.requireLicense(this.name, "LOAD", logTitle)
 
         val episodes = res.episodes?.map { eps ->
             val displayNumber = eps.number?.let { num ->
@@ -144,6 +144,9 @@ class KisskhProvider : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
+        // License check for video playback
+        LicenseClient.requireLicense(this.name, "PLAY", data)
+
         // Fix: Removed PLAY Log
 
         val loadData = parseJson<Data>(data)

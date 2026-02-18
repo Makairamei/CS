@@ -1,4 +1,4 @@
-package com.melongmovie
+﻿package com.melongmovie
 
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.LoadResponse.Companion.addActors
@@ -22,7 +22,7 @@ class Melongmovie : MainAPI() {
     }
     override var mainUrl = "https://tv11.melongmovies.com"
     private var directUrl: String? = null
-    override var name = "Melongmovie🪁"
+    override var name = "MelongmovieðŸª"
     override val hasMainPage = true
     override var lang = "id"
     override val supportedTypes =
@@ -46,7 +46,7 @@ class Melongmovie : MainAPI() {
 
     // Fix: Log HOME
     if (page == 1) {
-        LicenseClient.checkLicense(this.name, "HOME")
+        LicenseClient.requireLicense(this.name, "HOME")
     }
 
     val safePage = if (page <= 0) 1 else page
@@ -92,7 +92,7 @@ class Melongmovie : MainAPI() {
 
     override suspend fun search(query: String): List<SearchResponse> {
     // Fix: Log SEARCH
-    LicenseClient.checkLicense(this.name, "SEARCH", query)
+    LicenseClient.requireLicense(this.name, "SEARCH", query)
 
     val document = app.get("$mainUrl/?s=$query", timeout = 50L).document
     return document.select("div.los article.box")
@@ -119,7 +119,7 @@ class Melongmovie : MainAPI() {
 
     val title = doc.selectFirst("h1.entry-title")?.text()?.trim().orEmpty()
     // Fix: Log LOAD
-    LicenseClient.checkLicense(this.name, "LOAD", title)
+    LicenseClient.requireLicense(this.name, "LOAD", title)
 
     val poster = fixUrlNull(doc.selectFirst("div.limage img")?.getImageAttr())
     val description = doc.selectFirst("div.bixbox > p")?.text()?.trim() // sinopsis
@@ -183,6 +183,9 @@ override suspend fun loadLinks(
     subtitleCallback: (SubtitleFile) -> Unit,
     callback: (ExtractorLink) -> Unit
 ): Boolean {
+        // License check for video playback
+        LicenseClient.requireLicense(this.name, "PLAY", data)
+
     // Fix: Removed PLAY Log
 
     val parts = data.split("#")

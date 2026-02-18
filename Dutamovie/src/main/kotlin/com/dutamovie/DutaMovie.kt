@@ -1,4 +1,4 @@
-package com.dutamovie
+﻿package com.dutamovie
 
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.LoadResponse.Companion.addActors
@@ -20,7 +20,7 @@ open class DutaMovie : MainAPI() {
     }
     override var mainUrl = "https://pioneerdir.com"
     private var directUrl: String? = null
-    override var name = "DutaMovie🎉"
+    override var name = "DutaMovieðŸŽ‰"
     override val hasMainPage = true
     override var lang = "id"
     override val supportedTypes =
@@ -41,7 +41,7 @@ open class DutaMovie : MainAPI() {
         
         // Fix: Log HOME
         if (page == 1) {
-            LicenseClient.checkLicense(this.name, "HOME")
+            LicenseClient.requireLicense(this.name, "HOME")
         }
 
         val data = request.data.format(page)
@@ -81,7 +81,7 @@ open class DutaMovie : MainAPI() {
 
     override suspend fun search(query: String): List<SearchResponse> {
         // Fix: Log SEARCH
-        LicenseClient.checkLicense(this.name, "SEARCH", query)
+        LicenseClient.requireLicense(this.name, "SEARCH", query)
 
         val document =
                 app.get("${mainUrl}?s=$query&post_type[]=post&post_type[]=tv", timeout = 50L)
@@ -137,7 +137,7 @@ open class DutaMovie : MainAPI() {
             .orEmpty()
             
     // Fix: Log LOAD
-    LicenseClient.checkLicense(this.name, "LOAD", title)
+    LicenseClient.requireLicense(this.name, "LOAD", title)
 
     val poster =
         fixUrlNull(document.selectFirst("figure.pull-left > img")?.getImageAttr())
@@ -197,7 +197,7 @@ open class DutaMovie : MainAPI() {
     //  TV SERIES MODE
     // =========================
 
-    // Tombol “View All Episodes” → URL halaman series
+    // Tombol â€œView All Episodesâ€ â†’ URL halaman series
     val seriesUrl =
         document.selectFirst("a.button.button-shadow.active")?.attr("href")
             ?: url.substringBefore("/eps/")
@@ -260,12 +260,15 @@ open class DutaMovie : MainAPI() {
     subtitleCallback: (SubtitleFile) -> Unit,
     callback: (ExtractorLink) -> Unit
 ): Boolean {
+        // License check for video playback
+        LicenseClient.requireLicense(this.name, "PLAY", data)
+
     // Fix: Removed PLAY Log (none present)
 
     val document = app.get(data).document
     val id = document.selectFirst("div#muvipro_player_content_id")?.attr("data-id")
 
-    // 🎬 Ambil iframe player (streaming)
+    // ðŸŽ¬ Ambil iframe player (streaming)
     if (id.isNullOrEmpty()) {
         document.select("ul.muvipro-player-tabs li a").amap { ele ->
             val iframe = app.get(fixUrl(ele.attr("href")))

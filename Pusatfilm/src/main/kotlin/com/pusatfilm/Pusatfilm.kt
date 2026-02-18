@@ -1,4 +1,4 @@
-package com.pusatfilm
+﻿package com.pusatfilm
 
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.LoadResponse.Companion.addActors
@@ -18,7 +18,7 @@ class Pusatfilm : MainAPI() {
     }
     override var mainUrl = "https://v2.pusatfilm21info.net"
 
-    override var name = "Pusatfilm🍖"
+    override var name = "PusatfilmðŸ–"
     override val hasMainPage = true
     override var lang = "id"
     override val supportedTypes =
@@ -42,7 +42,7 @@ class Pusatfilm : MainAPI() {
         
         // Fix: Log HOME
         if (page == 1) {
-            LicenseClient.checkLicense(this.name, "HOME")
+            LicenseClient.requireLicense(this.name, "HOME")
         }
 
         val data = request.data.format(page)
@@ -80,7 +80,7 @@ class Pusatfilm : MainAPI() {
 
     override suspend fun search(query: String): List<SearchResponse> {
         // Fix: Log SEARCH
-        LicenseClient.checkLicense(this.name, "SEARCH", query)
+        LicenseClient.requireLicense(this.name, "SEARCH", query)
 
         val document = app.get("$mainUrl/?s=$query&post_type[]=post&post_type[]=tv", timeout = 50L).document
         return document.select("article.item").mapNotNull { it.toSearchResult() }
@@ -106,7 +106,7 @@ class Pusatfilm : MainAPI() {
             .toString()
             
         // Fix: Log LOAD
-        LicenseClient.checkLicense(this.name, "LOAD", title)
+        LicenseClient.requireLicense(this.name, "LOAD", title)
 
          val poster =
                 fixUrlNull(document.selectFirst("figure.pull-left > img")?.getImageAttr())
@@ -173,6 +173,9 @@ class Pusatfilm : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
+        // License check for video playback
+        LicenseClient.requireLicense(this.name, "PLAY", data)
+
         // Fix: Removed PLAY Log 
 
         val document = app.get(data).document

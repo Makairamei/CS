@@ -1,4 +1,4 @@
-package com.samehadaku
+﻿package com.samehadaku
 
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.LoadResponse.Companion.addAniListId
@@ -16,7 +16,7 @@ class Samehadaku : MainAPI() {
     }
 
     override var mainUrl = "https://v1.samehadaku.how"
-    override var name = "Samehadaku⛩️"
+    override var name = "Samehadakuâ›©ï¸"
     override var lang = "id"
     override val hasMainPage = true
     override val hasDownloadSupport = true
@@ -43,7 +43,7 @@ class Samehadaku : MainAPI() {
 
         // Fix: Log HOME
         if (page == 1) {
-            LicenseClient.checkLicense(this.name, "HOME")
+            LicenseClient.requireLicense(this.name, "HOME")
         }
 
         if (request.name == "Episode Terbaru") {
@@ -111,7 +111,7 @@ class Samehadaku : MainAPI() {
 
     override suspend fun search(query: String): List<SearchResponse> {
         // Fix: Log SEARCH
-        LicenseClient.checkLicense(this.name, "SEARCH", query)
+        LicenseClient.requireLicense(this.name, "SEARCH", query)
 
         return app.get("$mainUrl/?s=$query")
             .document
@@ -128,7 +128,7 @@ class Samehadaku : MainAPI() {
             ?: return null
             
         // Fix: Log LOAD
-        LicenseClient.checkLicense(this.name, "LOAD", title)
+        LicenseClient.requireLicense(this.name, "LOAD", title)
 
         val poster = document.selectFirst("div.thumb img")?.attr("src")
         val description = document.select("div.desc p").text()
@@ -198,6 +198,9 @@ class Samehadaku : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
+        // License check for video playback
+        LicenseClient.requireLicense(this.name, "PLAY", data)
+
         // Fix: Removed PLAY Log
 
         app.get(data).document

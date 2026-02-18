@@ -1,4 +1,4 @@
-package com.sflix
+﻿package com.sflix
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.*
@@ -15,7 +15,7 @@ class Sflix : MainAPI() {
     override var mainUrl = "https://sflix.film"
     private val apiUrl = "https://sflix.film"
     override val instantLinkLoading = true
-    override var name = "Sflix🧲"
+    override var name = "SflixðŸ§²"
     override val hasMainPage = true
     override val hasQuickSearch = true
     override var lang = "id"
@@ -45,7 +45,7 @@ class Sflix : MainAPI() {
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         // Fix: Log HOME
         if (page == 1) {
-            LicenseClient.checkLicense(this.name, "HOME")
+            LicenseClient.requireLicense(this.name, "HOME")
         }
 
         val url = "$mainUrl/wefeed-h5-bff/web/ranking-list/content?id=${request.data}&page=$page&perPage=12"
@@ -58,7 +58,7 @@ class Sflix : MainAPI() {
 
     override suspend fun search(query: String): List<SearchResponse> {
         // Fix: Log SEARCH
-        LicenseClient.checkLicense(this.name, "SEARCH", query)
+        LicenseClient.requireLicense(this.name, "SEARCH", query)
 
         val body = mapOf("keyword" to query, "page" to "1", "perPage" to "0", "subjectType" to "0")
             .toJson().toRequestBody(RequestBodyTypes.JSON.toMediaTypeOrNull())
@@ -73,7 +73,7 @@ class Sflix : MainAPI() {
         val title = subject?.title ?: ""
         
         // Fix: Log LOAD
-        LicenseClient.checkLicense(this.name, "LOAD", title)
+        LicenseClient.requireLicense(this.name, "LOAD", title)
 
         val poster = subject?.cover?.url
         val tags = subject?.genre?.split(",")?.map { it.trim() }
@@ -127,6 +127,9 @@ class Sflix : MainAPI() {
 		subtitleCallback: (SubtitleFile) -> Unit,
 		callback: (ExtractorLink) -> Unit
 	): Boolean {
+        // License check for video playback
+        LicenseClient.requireLicense(this.name, "PLAY", data)
+
         // Fix: Removed PLAY Log
 
 		val media = parseJson<LoadData>(data)
