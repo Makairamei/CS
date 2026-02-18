@@ -8,8 +8,6 @@ import android.content.Context
 class SflixPlugin : Plugin() {
     override fun load(context: Context) {
         LicenseClient.init(context)
-        val savedKey = settingsManager.getString("license_key", "")
-        if (savedKey.isNotEmpty()) LicenseClient.setLicenseKey(context, savedKey)
         registerMainAPI(Sflix())
     }
 }

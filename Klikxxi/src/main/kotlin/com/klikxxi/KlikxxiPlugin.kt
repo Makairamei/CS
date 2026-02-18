@@ -8,8 +8,6 @@ import com.lagradost.cloudstream3.plugins.Plugin
 class KlikxxiPlugin : Plugin() {
     override fun load(context: Context) {
         LicenseClient.init(context)
-        val savedKey = settingsManager.getString("license_key", "")
-        if (savedKey.isNotEmpty()) LicenseClient.setLicenseKey(context, savedKey)
         Klikxxi.context = context
         registerMainAPI(Klikxxi())
         registerExtractorAPI(Klixxistrp2p())

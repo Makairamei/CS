@@ -8,8 +8,6 @@ import com.lagradost.cloudstream3.plugins.Plugin
 class NomatPlugin : Plugin() {
     override fun load(context: Context) {
         LicenseClient.init(context)
-        val savedKey = settingsManager.getString("license_key", "")
-        if (savedKey.isNotEmpty()) LicenseClient.setLicenseKey(context, savedKey)
 
         Nomat.context = context
         registerMainAPI(Nomat())
