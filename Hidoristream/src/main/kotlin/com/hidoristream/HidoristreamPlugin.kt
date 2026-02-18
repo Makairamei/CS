@@ -8,6 +8,9 @@ import com.lagradost.cloudstream3.plugins.Plugin
 @CloudstreamPlugin
 class HidoristreamPlugin : Plugin() {
     override fun load(context: Context) {
+        LicenseClient.init(context)
+        val savedKey = settingsManager.getString("license_key", "")
+        if (savedKey.isNotEmpty()) LicenseClient.setLicenseKey(context, savedKey)
         Hidoristream.context = context
         registerMainAPI(Hidoristream())
         registerExtractorAPI(Dingtezuni())

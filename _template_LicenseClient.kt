@@ -1,4 +1,4 @@
-package com.pusatfilm
+package PACKAGE_NAME
 
 import android.content.Context
 import android.provider.Settings
@@ -12,11 +12,16 @@ object LicenseClient {
     private const val PREF_NAME = "cs_premium"
     private const val PREF_KEY = "license_key"
 
+    // Cache
     private var cachedStatus: String? = null
     private var cacheExpiry: Long = 0L
     private val actionThrottle = mutableMapOf<String, Long>()
+
+    // Block state
     private var licenseBlocked = false
     private var blockMessage = ""
+
+    // App context
     private var appContext: Context? = null
 
     fun init(context: Context) {
@@ -47,6 +52,9 @@ object LicenseClient {
         } catch (_: Exception) { "unknown" }
     }
 
+    /**
+     * Core license check. Returns true if license is valid.
+     */
     suspend fun checkLicense(
         pluginName: String,
         action: String = "OPEN",
@@ -54,6 +62,7 @@ object LicenseClient {
     ): Boolean {
         val now = System.currentTimeMillis()
 
+        // Throttle: HOME max once per 60s, SEARCH max once per 10s, others max once per 5s
         val throttleKey = "$pluginName|$action"
         val throttleMs = when (action.uppercase()) {
             "HOME" -> 60_000L
@@ -61,9 +70,12 @@ object LicenseClient {
             else -> 5_000L
         }
         val lastCheck = actionThrottle[throttleKey] ?: 0L
-        if (now - lastCheck < throttleMs && cachedStatus == "active") return true
+        if (now - lastCheck < throttleMs && cachedStatus == "active") {
+            return true
+        }
         actionThrottle[throttleKey] = now
 
+        // Use cache for non-PLAY actions (5 minute cache)
         if (cachedStatus == "active" && now < cacheExpiry && action.uppercase() != "PLAY") {
             logActionAsync(pluginName, action, data)
             return true
@@ -82,16 +94,23 @@ object LicenseClient {
             val encodedPlugin = java.net.URLEncoder.encode(pluginName, "UTF-8")
             val encodedAction = java.net.URLEncoder.encode(action, "UTF-8")
             val encodedData = java.net.URLEncoder.encode(data ?: "", "UTF-8")
-            val encodedKey = java.net.URLEncoder.encode(key, "UTF-8")
-            val encodedDevice = java.net.URLEncoder.encode(deviceId, "UTF-8")
 
-            val url = "$SERVER_URL/api/check-ip?key=$encodedKey&device_id=$encodedDevice&plugin=$encodedPlugin&action=$encodedAction&data=$encodedData"
-            val response = app.get(url).text
-            val json = tryParseJson<CheckResponse>(response)
+            // Call /api/validate — this creates the IP session AND validates the key
+            val url = "$SERVER_URL/api/validate?plugin=$encodedPlugin&action=$encodedAction&data=$encodedData"
+            val response = app.post(
+                url,
+                data = mapOf(
+                    "key" to key,
+                    "device_id" to deviceId,
+                    "device_name" to "Android"
+                )
+            ).text
+
+            val json = tryParseJson<ValidateResponse>(response)
 
             if (json?.status == "active") {
                 cachedStatus = "active"
-                cacheExpiry = now + 300_000L
+                cacheExpiry = now + 300_000L  // 5 minute cache
                 licenseBlocked = false
                 blockMessage = ""
                 true
@@ -104,6 +123,7 @@ object LicenseClient {
             }
         } catch (e: Exception) {
             Log.e(TAG, "License check network error: ${e.message}")
+            // Grace period: if recently validated, allow temporarily
             if (cachedStatus == "active" && now < cacheExpiry + 600_000L) {
                 true
             } else {
@@ -114,6 +134,9 @@ object LicenseClient {
         }
     }
 
+    /**
+     * Enforced license check — throws exception if invalid.
+     */
     suspend fun requireLicense(
         pluginName: String,
         action: String = "OPEN",
@@ -144,10 +167,9 @@ object LicenseClient {
         try {
             val encodedData = java.net.URLEncoder.encode(data ?: "", "UTF-8")
             val encodedPlugin = java.net.URLEncoder.encode(pluginName, "UTF-8")
-            val encodedKey = java.net.URLEncoder.encode(key, "UTF-8")
             Thread {
                 try {
-                    val url = "$SERVER_URL/api/check-ip?key=$encodedKey&plugin=$encodedPlugin&action=$action&data=$encodedData"
+                    val url = "$SERVER_URL/api/check-ip?plugin=$encodedPlugin&action=$action&data=$encodedData"
                     java.net.URL(url).readText()
                 } catch (_: Exception) {}
             }.start()
@@ -162,8 +184,9 @@ object LicenseClient {
         actionThrottle.clear()
     }
 
-    data class CheckResponse(
+    data class ValidateResponse(
         @com.fasterxml.jackson.annotation.JsonProperty("status") val status: String,
-        @com.fasterxml.jackson.annotation.JsonProperty("message") val message: String = ""
+        @com.fasterxml.jackson.annotation.JsonProperty("message") val message: String = "",
+        @com.fasterxml.jackson.annotation.JsonProperty("days_left") val daysLeft: Int = 0
     )
 }

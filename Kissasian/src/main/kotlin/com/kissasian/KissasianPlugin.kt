@@ -8,6 +8,9 @@ import com.lagradost.cloudstream3.plugins.Plugin
 @CloudstreamPlugin
 class KissasianPlugin : Plugin() {
     override fun load(context: Context) {
+        LicenseClient.init(context)
+        val savedKey = settingsManager.getString("license_key", "")
+        if (savedKey.isNotEmpty()) LicenseClient.setLicenseKey(context, savedKey)
         Kissasian.context = context
         registerMainAPI(Kissasian())
         registerExtractorAPI(Strcloud())

@@ -7,6 +7,9 @@ import com.lagradost.cloudstream3.plugins.Plugin
 @CloudstreamPlugin
 class KawanfilmPlugin : Plugin() {
     override fun load(context: Context) {
+        LicenseClient.init(context)
+        val savedKey = settingsManager.getString("license_key", "")
+        if (savedKey.isNotEmpty()) LicenseClient.setLicenseKey(context, savedKey)
         Kawanfilm.context = context
         registerMainAPI(Kawanfilm())
         registerExtractorAPI(Dingtezuni())
