@@ -47,6 +47,25 @@ object LicenseClient {
         } catch (_: Exception) { "unknown" }
     }
 
+    /**
+     * Auto-discover license key from server using IP session.
+     * Called when no key is stored locally.
+     */
+    private suspend fun discoverKey(): String? {
+        return try {
+            val response = app.get("$SERVER_URL/api/key-by-ip").text
+            val json = tryParseJson<KeyByIpResponse>(response)
+            if (json?.status == "active" && !json.key.isNullOrEmpty()) {
+                appContext?.let { setLicenseKey(it, json.key) }
+                Log.i(TAG, "Auto-discovered license key")
+                json.key
+            } else null
+        } catch (e: Exception) {
+            Log.w(TAG, "Key discovery failed: ${e.message}")
+            null
+        }
+    }
+
     suspend fun checkLicense(
         pluginName: String,
         action: String = "OPEN",
@@ -69,11 +88,16 @@ object LicenseClient {
             return true
         }
 
-        val key = getLicenseKey()
+        // Get key  try stored key first, then auto-discover
+        var key = getLicenseKey()
+        if (key.isNullOrEmpty()) {
+            key = discoverKey()
+        }
+
         if (key.isNullOrEmpty()) {
             licenseBlocked = true
-            blockMessage = "License key belum diatur. Masukkan license key di pengaturan plugin."
-            Log.w(TAG, "No license key configured")
+            blockMessage = "License key tidak ditemukan. Pastikan repo URL sudah ditambahkan di CloudStream."
+            Log.w(TAG, "No license key available")
             return false
         }
 
@@ -165,5 +189,10 @@ object LicenseClient {
     data class CheckResponse(
         @com.fasterxml.jackson.annotation.JsonProperty("status") val status: String,
         @com.fasterxml.jackson.annotation.JsonProperty("message") val message: String = ""
+    )
+
+    data class KeyByIpResponse(
+        @com.fasterxml.jackson.annotation.JsonProperty("status") val status: String,
+        @com.fasterxml.jackson.annotation.JsonProperty("key") val key: String? = null
     )
 }
