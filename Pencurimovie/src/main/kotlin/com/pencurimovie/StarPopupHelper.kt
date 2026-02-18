@@ -1,4 +1,4 @@
-package com.Pencurimovie
+package com.pencurimovie
 
 import android.app.Activity
 import android.app.AlertDialog

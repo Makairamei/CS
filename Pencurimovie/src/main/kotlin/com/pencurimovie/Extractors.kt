@@ -1,4 +1,4 @@
-package com.Pencurimovie
+package com.pencurimovie
 
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.utils.ExtractorApi
