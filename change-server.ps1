@@ -3,7 +3,7 @@
 # Ganti SERVER_URL di semua LicenseClient.kt sekaligus
 # 
 # Cara pakai:
-#   .\change-server.ps1 -NewUrl "http://IP_BARU:3000"
+#   .\change-server.ps1 -NewUrl "http://159.223.82.116:3000"
 # ============================================================
 
 param(
