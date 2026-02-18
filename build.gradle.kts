@@ -16,6 +16,15 @@ buildscript {
         classpath("com.github.recloudstream:gradle:cce1b8d84d")
         classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:2.1.0")
     }
+    
+    configurations.all {
+        resolutionStrategy {
+            force("org.jetbrains.kotlin:kotlin-gradle-plugin:2.1.0")
+            force("org.jetbrains.kotlin:kotlin-stdlib:2.1.0")
+            force("org.jetbrains.kotlin:kotlin-reflect:2.1.0")
+            force("org.jetbrains.kotlin:kotlin-compiler-embeddable:2.1.0")
+        }
+    }
 }
 
 allprojects {
