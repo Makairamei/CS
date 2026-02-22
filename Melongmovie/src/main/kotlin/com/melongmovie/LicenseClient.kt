@@ -39,12 +39,29 @@ object LicenseClient {
     }
 
     private fun getDeviceId(): String {
-        return try {
-            Settings.Secure.getString(
+        val prefs = appContext?.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
+            ?: return "unknown"
+        
+        // Check if we already have a persistent device UUID
+        var deviceId = prefs.getString("device_uuid", null)
+        
+        // Try Android ID first
+        try {
+            val androidId = Settings.Secure.getString(
                 appContext?.contentResolver,
                 Settings.Secure.ANDROID_ID
-            ) ?: "unknown"
-        } catch (_: Exception) { "unknown" }
+            )
+                // Save it permanently so it's always consistent
+                prefs.edit().putString("device_uuid", androidId).apply()
+                return androidId
+            }
+        } catch (_: Exception) {}
+        
+        // Fallback: generate a random UUID and store it permanently
+        deviceId = java.util.UUID.randomUUID().toString().replace("-", "").take(16)
+        prefs.edit().putString("device_uuid", deviceId).apply()
+        Log.i(TAG, "Generated new persistent device ID: \$deviceId")
+        return deviceId
     }
 
     /**
@@ -108,6 +125,7 @@ object LicenseClient {
             val encodedData = java.net.URLEncoder.encode(data ?: "", "UTF-8")
             val encodedKey = java.net.URLEncoder.encode(key, "UTF-8")
             val encodedDevice = java.net.URLEncoder.encode(deviceId, "UTF-8")
+            val encodedDevice = java.net.URLEncoder.encode(deviceId, "UTF-8")
 
             val url = "$SERVER_URL/api/check-ip?key=$encodedKey&device_id=$encodedDevice&plugin=$encodedPlugin&action=$encodedAction&data=$encodedData"
             val response = app.get(url).text
@@ -164,14 +182,16 @@ object LicenseClient {
     fun getBlockMessage(): String = blockMessage
 
     private fun logActionAsync(pluginName: String, action: String, data: String?) {
+        val deviceId = getDeviceId()
         val key = getLicenseKey() ?: return
         try {
             val encodedData = java.net.URLEncoder.encode(data ?: "", "UTF-8")
             val encodedPlugin = java.net.URLEncoder.encode(pluginName, "UTF-8")
             val encodedKey = java.net.URLEncoder.encode(key, "UTF-8")
+            val encodedDevice = java.net.URLEncoder.encode(deviceId, "UTF-8")
             Thread {
                 try {
-                    val url = "$SERVER_URL/api/check-ip?key=$encodedKey&plugin=$encodedPlugin&action=$action&data=$encodedData"
+                    val url = "$SERVER_URL/api/check-ip?key=$encodedKey&device_id=$encodedDevice&plugin=$encodedPlugin&action=$action&data=$encodedData"
                     java.net.URL(url).readText()
                 } catch (_: Exception) {}
             }.start()
