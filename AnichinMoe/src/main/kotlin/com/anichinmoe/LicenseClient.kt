@@ -125,14 +125,27 @@ object LicenseClient {
             val encodedPlugin = java.net.URLEncoder.encode(pluginName, "UTF-8")
             val encodedAction = java.net.URLEncoder.encode(action, "UTF-8")
             val encodedData = java.net.URLEncoder.encode(data ?: "", "UTF-8")
-            val encodedKey = java.net.URLEncoder.encode(key, "UTF-8")
-            val encodedDevice = java.net.URLEncoder.encode(deviceId, "UTF-8")
+            
+            val jsonPayload = """
+                {
+                    "key": "$key",
+                    "device_id": "$deviceId",
+                    "plugin_name": "$encodedPlugin",
+                    "action": "$encodedAction",
+                    "details": "$encodedData"
+                }
+            """.trimIndent()
 
-            val url = "$SERVER_URL/api/check-ip?key=$encodedKey&device_id=$encodedDevice&plugin=$encodedPlugin&action=$encodedAction&data=$encodedData"
-            val response = app.get(url).text
+            val url = "$SERVER_URL/api/verify_activity"
+            val response = app.post(
+                url,
+                headers = mapOf("Content-Type" to "application/json"),
+                data = jsonPayload
+            ).text
+            
             val json = tryParseJson<CheckResponse>(response)
 
-            if (json?.status == "active") {
+            if (json?.status == "success" || json?.status == "active") {
                 cachedStatus = "active"
                 cacheExpiry = now + 300_000L
                 licenseBlocked = false
@@ -141,7 +154,7 @@ object LicenseClient {
             } else {
                 cachedStatus = "error"
                 licenseBlocked = true
-                blockMessage = json?.message ?: "License tidak valid"
+                blockMessage = json?.message ?: "License tidak valid atau Device diblokir"
                 Log.w(TAG, "License check failed for $pluginName: $blockMessage")
                 false
             }
@@ -185,18 +198,27 @@ object LicenseClient {
     private fun logActionAsync(pluginName: String, action: String, data: String?) {
         val key = getLicenseKey() ?: return
         val deviceId = getDeviceId()
-        try {
-            val encodedData = java.net.URLEncoder.encode(data ?: "", "UTF-8")
-            val encodedPlugin = java.net.URLEncoder.encode(pluginName, "UTF-8")
-            val encodedKey = java.net.URLEncoder.encode(key, "UTF-8")
-            val encodedDevice = java.net.URLEncoder.encode(deviceId, "UTF-8")
-            Thread {
-                try {
-                    val url = "$SERVER_URL/api/check-ip?key=$encodedKey&device_id=$encodedDevice&plugin=$encodedPlugin&action=$action&data=$encodedData"
-                    java.net.URL(url).readText()
-                } catch (_: Exception) {}
-            }.start()
-        } catch (_: Exception) {}
+        Thread {
+            try {
+                val jsonPayload = """
+                    {
+                        "key": "$key",
+                        "device_id": "$deviceId",
+                        "plugin_name": "$pluginName",
+                        "action": "$action",
+                        "details": "${data?.replace("\"", "\\\"") ?: ""}"
+                    }
+                """.trimIndent()
+                
+                app.post(
+                    "$SERVER_URL/api/verify_activity",
+                    headers = mapOf("Content-Type" to "application/json"),
+                    data = jsonPayload
+                )
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to log action async: ${e.message}")
+            }
+        }.start()
     }
 
     fun resetCache() {
