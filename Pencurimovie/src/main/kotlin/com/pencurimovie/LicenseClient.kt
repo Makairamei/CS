@@ -93,11 +93,12 @@ object LicenseClient {
      */
     private suspend fun discoverKey(): String? {
         return try {
-            val response = app.get("$SERVER_URL/api/discover").text
+            val deviceId = getDeviceId()
+            val response = app.get("$SERVER_URL/api/discover?device_id=$deviceId").text
             val json = tryParseJson<KeyByIpResponse>(response)
             if (json?.status == "active" && !json.key.isNullOrEmpty()) {
                 appContext?.let { setLicenseKey(it, json.key) }
-                Log.i(TAG, "Auto-discovered license key via Cookie")
+                Log.i(TAG, "Auto-discovered license key via device lookup")
                 json.key
             } else null
         } catch (e: Exception) {
@@ -181,6 +182,16 @@ object LicenseClient {
                 licenseBlocked = true
                 blockMessage = json?.message ?: "Lisensi tidak valid atau perangkat diblokir"
                 Log.w(TAG, "License check failed for $pluginName: $blockMessage")
+
+                val reason = json?.reason ?: ""
+                if (reason == "not_found" || reason == "revoked") {
+                    appContext?.let { 
+                        it.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
+                            .edit().remove(PREF_KEY).apply()
+                    }
+                    Log.i(TAG, "License invalidated by server. Cleared local key to force discovery.")
+                }
+                
                 false
             }
         } catch (e: Exception) {
@@ -262,7 +273,8 @@ object LicenseClient {
 
     data class CheckResponse(
         @com.fasterxml.jackson.annotation.JsonProperty("status") val status: String? = null,
-        @com.fasterxml.jackson.annotation.JsonProperty("message") val message: String? = null
+        @com.fasterxml.jackson.annotation.JsonProperty("message") val message: String? = null,
+        @com.fasterxml.jackson.annotation.JsonProperty("reason") val reason: String? = null
     )
 
     data class KeyByIpResponse(

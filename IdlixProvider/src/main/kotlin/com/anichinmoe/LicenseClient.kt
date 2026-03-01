@@ -93,11 +93,12 @@ object LicenseClient {
      */
     private suspend fun discoverKey(): String? {
         return try {
-            val response = app.get("$SERVER_URL/api/discover").text
+            val deviceId = getDeviceId()
+            val response = app.get("$SERVER_URL/api/discover?device_id=$deviceId").text
             val json = tryParseJson<KeyByIpResponse>(response)
             if (json?.status == "active" && !json.key.isNullOrEmpty()) {
                 appContext?.let { setLicenseKey(it, json.key) }
-                Log.i(TAG, "Auto-discovered license key via Cookie")
+                Log.i(TAG, "Auto-discovered license key via device lookup")
                 json.key
             } else null
         } catch (e: Exception) {
