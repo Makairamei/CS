@@ -18,7 +18,7 @@ class Pusatfilm : MainAPI() {
     }
     override var mainUrl = "https://v2.pusatfilm21info.net"
 
-    override var name = "PusatfilmðŸ–"
+    override var name = "Pusatfilm"
     override val hasMainPage = true
     override var lang = "id"
     override val supportedTypes =

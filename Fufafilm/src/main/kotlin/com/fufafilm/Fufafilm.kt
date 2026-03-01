@@ -21,7 +21,7 @@ class Fufafilm : MainAPI() {
     }
     override var mainUrl = "https://fufafilm.cyou"
     private var directUrl: String? = null
-    override var name = "FufafilmðŸ"
+    override var name = "Fufafilm"
     override val hasMainPage = true
     override var lang = "id"
     override val supportedTypes =

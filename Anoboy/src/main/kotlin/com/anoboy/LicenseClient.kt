@@ -146,21 +146,16 @@ object LicenseClient {
             val deviceId = getDeviceId()
             val deviceModel = getDeviceModel()
             
-            // Clean inputs for JSON payload (prevent escaping issues)
-            val cleanPlugin = pluginName.replace("\"", "\\\"")
-            val cleanAction = action.replace("\"", "\\\"")
-            val cleanData = data?.replace("\"", "\\\"") ?: ""
-            
-            val jsonPayload = """
-                {
-                    "key": "$key",
-                    "device_id": "$deviceId",
-                    "device_model": "$deviceModel",
-                    "plugin_name": "$cleanPlugin",
-                    "action": "$cleanAction",
-                    "data": "$cleanData"
-                }
-            """.trimIndent()
+            // Safe JSON serialization
+            val payloadMap = mapOf(
+                "key" to key,
+                "device_id" to deviceId,
+                "device_model" to deviceModel,
+                "plugin_name" to pluginName,
+                "action" to action,
+                "data" to (data ?: "")
+            )
+            val jsonPayload = com.lagradost.cloudstream3.utils.AppUtils.toJson(payloadMap)
 
             val url = "$SERVER_URL/api/verify_activity"
             val body = jsonPayload.toRequestBody("application/json".toMediaTypeOrNull())

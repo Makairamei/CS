@@ -15,7 +15,7 @@ class Filmapik : MainAPI() {
         var context: android.content.Context? = null
     }
     override var mainUrl = "https://filmapik.fitness"
-    override var name = "FilmApikðŸŽƒ"
+    override var name = "FilmApik"
     override val hasMainPage = true
     override var lang = "id"
     override val supportedTypes = setOf(TvType.Movie, TvType.TvSeries, TvType.Anime, TvType.AsianDrama)

@@ -20,7 +20,7 @@ open class DutaMovie : MainAPI() {
     }
     override var mainUrl = "https://pioneerdir.com"
     private var directUrl: String? = null
-    override var name = "DutaMovieðŸŽ‰"
+    override var name = "DutaMovie"
     override val hasMainPage = true
     override var lang = "id"
     override val supportedTypes =

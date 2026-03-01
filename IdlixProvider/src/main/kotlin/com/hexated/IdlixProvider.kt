@@ -21,7 +21,7 @@ class IdlixProvider : MainAPI() {
     }
     override var mainUrl = "https://tv11.idlixku.com"
     private var directUrl = mainUrl
-    override var name = "IdlixðŸŽ„"
+    override var name = "Idlix"
     override val hasMainPage = true
     override var lang = "id"
     override val hasDownloadSupport = true

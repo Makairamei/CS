@@ -17,7 +17,7 @@ import org.jsoup.nodes.Element
 
 class Winbu : MainAPI() {
     override var mainUrl = "https://winbu.net"
-    override var name = "WinbuðŸ¤¬"
+    override var name = "Winbu"
     override val hasMainPage = true
     override var lang = "id"
     override val hasQuickSearch = true

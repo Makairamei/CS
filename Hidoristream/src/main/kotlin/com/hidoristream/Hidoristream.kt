@@ -12,7 +12,7 @@ import org.jsoup.nodes.Element
 
 class Hidoristream : MainAPI() {
     override var mainUrl = "https://v2.hidoristream.online"
-    override var name = "HidoristreamðŸ¹"
+    override var name = "Hidoristream"
     override val hasMainPage = true
     override var lang = "id"
 

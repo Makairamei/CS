@@ -15,7 +15,7 @@ class Sflix : MainAPI() {
     override var mainUrl = "https://sflix.film"
     private val apiUrl = "https://sflix.film"
     override val instantLinkLoading = true
-    override var name = "SflixðŸ§²"
+    override var name = "Sflix"
     override val hasMainPage = true
     override val hasQuickSearch = true
     override var lang = "id"

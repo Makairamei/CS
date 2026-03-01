@@ -14,7 +14,7 @@ class Pencurimovie : MainAPI() {
         var context: android.content.Context? = null
     }
     override var mainUrl = "https://ww73.pencurimovie.bond"
-    override var name = "PencurimovieðŸ•"
+    override var name = "Pencurimovie"
     override val hasMainPage = true
     override var lang = "id"
     override val hasDownloadSupport = true

@@ -10,7 +10,7 @@ class Donghub : MainAPI() {
         var context: android.content.Context? = null
     }
     override var mainUrl = "https://donghub.vip"
-    override var name = "DonghubðŸ‰"
+    override var name = "Donghub"
     override val hasMainPage = true
     override var lang = "id"
     override val hasDownloadSupport = true

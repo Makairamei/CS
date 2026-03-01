@@ -48,7 +48,7 @@ import kotlin.math.max
 
 class MovieBoxProvider : MainAPI() {
     override var mainUrl = "https://api3.aoneroom.com"
-    override var name = "MovieboxðŸ¥‘"
+    override var name = "Moviebox"
     override val hasMainPage = true
     override var lang = "id"
     override val supportedTypes = setOf(TvType.Movie, TvType.TvSeries)
