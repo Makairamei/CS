@@ -38,9 +38,6 @@ jobs:
           distribution: "temurin"
           java-version: 17
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-
       - name: Access Secrets
         env:
           CRUNCHYROLL_BASIC_TOKEN: ${{ secrets.CRUNCHYROLL_BASIC_TOKEN }}
@@ -84,8 +81,8 @@ jobs:
           cd $GITHUB_WORKSPACE/src
           chmod +x gradlew
           ./gradlew make makePluginsJson
-          cp **/build/*.cs3 $GITHUB_WORKSPACE/builds
-          cp build/plugins.json $GITHUB_WORKSPACE/builds
+          find . -type f -name "*.cs3" -exec cp {} $GITHUB_WORKSPACE/builds/ \;
+          cp build/plugins.json $GITHUB_WORKSPACE/builds/ || true
 
       - name: Push builds
         run: |

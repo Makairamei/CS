@@ -1,10 +1,12 @@
 package com.dutamovie
 
 import android.content.Context
+import android.os.Build
 import android.provider.Settings
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 import android.util.Log
+import java.security.MessageDigest
 
 object LicenseClient {
     private const val TAG = "LicenseClient"
@@ -38,32 +40,53 @@ object LicenseClient {
             ?.takeIf { it.isNotEmpty() }
     }
 
+    private fun getHardwareHash(): String {
+        val hwInfo = "${Build.BOARD}${Build.BRAND}${Build.DEVICE}${Build.HARDWARE}${Build.MANUFACTURER}${Build.MODEL}${Build.PRODUCT}"
+        val digest = MessageDigest.getInstance("SHA-256")
+        val hashBytes = digest.digest(hwInfo.toByteArray(Charsets.UTF_8))
+        return hashBytes.joinToString("") { "%02x".format(it) }.take(8)
+    }
+
     private fun getDeviceId(): String {
         val prefs = appContext?.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
             ?: return "unknown"
         
-        // Check if we already have a persistent device UUID
+        // 1. Check if we already have a persistent device UUID
         var deviceId = prefs.getString("device_uuid", null)
-        if (!deviceId.isNullOrEmpty()) return deviceId
+        if (!deviceId.isNullOrEmpty() && deviceId != "unknown") return deviceId
         
-        // Try Android ID first
+        // 2. Try Android ID + Hardware Hash for a super-accurate unique ID
         try {
             val androidId = Settings.Secure.getString(
                 appContext?.contentResolver,
                 Settings.Secure.ANDROID_ID
             )
             if (!androidId.isNullOrEmpty() && androidId != "unknown") {
-                // Save it permanently so it's always consistent
-                prefs.edit().putString("device_uuid", androidId).apply()
-                return androidId
+                val hwHash = getHardwareHash()
+                deviceId = "$androidId-$hwHash"
+                prefs.edit().putString("device_uuid", deviceId).apply()
+                return deviceId
             }
         } catch (_: Exception) {}
         
-        // Fallback: generate a random UUID and store it permanently
-        deviceId = java.util.UUID.randomUUID().toString().replace("-", "").take(16)
+        // 3. Fallback: generate a random UUID and store it permanently
+        val fallbackId = java.util.UUID.randomUUID().toString().replace("-", "").take(16)
+        val hwHash = getHardwareHash()
+        deviceId = "$fallbackId-$hwHash"
         prefs.edit().putString("device_uuid", deviceId).apply()
+        
         Log.i(TAG, "Generated new persistent device ID: $deviceId")
         return deviceId
+    }
+
+    private fun getDeviceModel(): String {
+        val manufacturer = Build.MANUFACTURER.replaceFirstChar { it.uppercase() }
+        val model = Build.MODEL
+        return if (model.startsWith(manufacturer, ignoreCase = true)) {
+            model
+        } else {
+            "$manufacturer $model"
+        }.take(100)
     }
 
     /**
@@ -107,7 +130,7 @@ object LicenseClient {
             return true
         }
 
-        // Get key  try stored key first, then auto-discover
+        // Get key: try stored key first, then auto-discover
         var key = getLicenseKey()
         if (key.isNullOrEmpty()) {
             key = discoverKey()
@@ -115,24 +138,28 @@ object LicenseClient {
 
         if (key.isNullOrEmpty()) {
             licenseBlocked = true
-            blockMessage = "License key tidak ditemukan. Pastikan repo URL sudah ditambahkan di CloudStream."
+            blockMessage = "Lisensi tidak ditemukan. Pastikan repo URL premium sudah ditambahkan."
             Log.w(TAG, "No license key available")
             return false
         }
 
         return try {
             val deviceId = getDeviceId()
-            val encodedPlugin = java.net.URLEncoder.encode(pluginName, "UTF-8")
-            val encodedAction = java.net.URLEncoder.encode(action, "UTF-8")
-            val encodedData = java.net.URLEncoder.encode(data ?: "", "UTF-8")
+            val deviceModel = getDeviceModel()
+            
+            // Clean inputs for JSON payload (prevent escaping issues)
+            val cleanPlugin = pluginName.replace("\"", "\\\"")
+            val cleanAction = action.replace("\"", "\\\"")
+            val cleanData = data?.replace("\"", "\\\"") ?: ""
             
             val jsonPayload = """
                 {
                     "key": "$key",
                     "device_id": "$deviceId",
-                    "plugin_name": "$encodedPlugin",
-                    "action": "$encodedAction",
-                    "details": "$encodedData"
+                    "device_model": "$deviceModel",
+                    "plugin_name": "$cleanPlugin",
+                    "action": "$cleanAction",
+                    "data": "$cleanData"
                 }
             """.trimIndent()
 
@@ -145,23 +172,23 @@ object LicenseClient {
             
             val json = tryParseJson<CheckResponse>(response)
 
-            if (json?.status == "success" || json?.status == "active") {
+            if (json?.status == "active" || json?.status == "success") {
                 cachedStatus = "active"
-                cacheExpiry = now + 300_000L
+                cacheExpiry = now + 300_000L // 5 minutes cache
                 licenseBlocked = false
                 blockMessage = ""
                 true
             } else {
                 cachedStatus = "error"
                 licenseBlocked = true
-                blockMessage = json?.message ?: "License tidak valid atau Device diblokir"
+                blockMessage = json?.message ?: "Lisensi tidak valid atau perangkat diblokir"
                 Log.w(TAG, "License check failed for $pluginName: $blockMessage")
                 false
             }
         } catch (e: Exception) {
             Log.e(TAG, "License check network error: ${e.message}")
             if (cachedStatus == "active" && now < cacheExpiry + 600_000L) {
-                true
+                true // Grace period of 10 extra minutes if previously active
             } else {
                 licenseBlocked = true
                 blockMessage = "Tidak dapat memverifikasi lisensi. Periksa koneksi internet."
@@ -198,15 +225,21 @@ object LicenseClient {
     private fun logActionAsync(pluginName: String, action: String, data: String?) {
         val key = getLicenseKey() ?: return
         val deviceId = getDeviceId()
+        val deviceModel = getDeviceModel()
         Thread {
             try {
+                val cleanPlugin = pluginName.replace("\"", "\\\"")
+                val cleanAction = action.replace("\"", "\\\"")
+                val cleanData = data?.replace("\"", "\\\"") ?: ""
+                
                 val jsonPayload = """
                     {
                         "key": "$key",
                         "device_id": "$deviceId",
-                        "plugin_name": "$pluginName",
-                        "action": "$action",
-                        "details": "${data?.replace("\"", "\\\"") ?: ""}"
+                        "device_model": "$deviceModel",
+                        "plugin_name": "$cleanPlugin",
+                        "action": "$cleanAction",
+                        "data": "$cleanData"
                     }
                 """.trimIndent()
                 
@@ -230,12 +263,12 @@ object LicenseClient {
     }
 
     data class CheckResponse(
-        @com.fasterxml.jackson.annotation.JsonProperty("status") val status: String,
-        @com.fasterxml.jackson.annotation.JsonProperty("message") val message: String = ""
+        @com.fasterxml.jackson.annotation.JsonProperty("status") val status: String? = null,
+        @com.fasterxml.jackson.annotation.JsonProperty("message") val message: String? = null
     )
 
     data class KeyByIpResponse(
-        @com.fasterxml.jackson.annotation.JsonProperty("status") val status: String,
+        @com.fasterxml.jackson.annotation.JsonProperty("status") val status: String? = null,
         @com.fasterxml.jackson.annotation.JsonProperty("key") val key: String? = null
     )
 }
