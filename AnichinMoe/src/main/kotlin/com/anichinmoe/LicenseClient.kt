@@ -181,6 +181,16 @@ object LicenseClient {
                 licenseBlocked = true
                 blockMessage = json?.message ?: "Lisensi tidak valid atau perangkat diblokir"
                 Log.w(TAG, "License check failed for $pluginName: $blockMessage")
+
+                val reason = json?.reason ?: ""
+                if (reason == "not_found" || reason == "revoked") {
+                    appContext?.let { 
+                        it.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
+                            .edit().remove(PREF_KEY).apply()
+                    }
+                    Log.i(TAG, "License invalidated by server. Cleared local key to force discovery.")
+                }
+                
                 false
             }
         } catch (e: Exception) {
