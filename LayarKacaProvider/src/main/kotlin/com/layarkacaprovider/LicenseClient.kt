@@ -7,6 +7,10 @@ import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 import android.util.Log
 import java.security.MessageDigest
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.RequestBody.Companion.toRequestBody
 
 object LicenseClient {
     private const val TAG = "LicenseClient"
@@ -164,10 +168,10 @@ object LicenseClient {
             """.trimIndent()
 
             val url = "$SERVER_URL/api/verify_activity"
+            val body = jsonPayload.toRequestBody("application/json".toMediaTypeOrNull())
             val response = app.post(
                 url,
-                headers = mapOf("Content-Type" to "application/json"),
-                data = jsonPayload
+                requestBody = body
             ).text
             
             val json = tryParseJson<CheckResponse>(response)
@@ -226,7 +230,7 @@ object LicenseClient {
         val key = getLicenseKey() ?: return
         val deviceId = getDeviceId()
         val deviceModel = getDeviceModel()
-        Thread {
+        GlobalScope.launch {
             try {
                 val cleanPlugin = pluginName.replace("\"", "\\\"")
                 val cleanAction = action.replace("\"", "\\\"")
@@ -243,15 +247,15 @@ object LicenseClient {
                     }
                 """.trimIndent()
                 
+                val body = jsonPayload.toRequestBody("application/json".toMediaTypeOrNull())
                 app.post(
                     "$SERVER_URL/api/verify_activity",
-                    headers = mapOf("Content-Type" to "application/json"),
-                    data = jsonPayload
+                    requestBody = body
                 )
             } catch (e: Exception) {
                 Log.w(TAG, "Failed to log action async: ${e.message}")
             }
-        }.start()
+        }
     }
 
     fun resetCache() {
