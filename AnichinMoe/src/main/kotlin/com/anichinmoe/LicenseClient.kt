@@ -59,27 +59,21 @@ object LicenseClient {
         var deviceId = prefs.getString("device_uuid", null)
         if (!deviceId.isNullOrEmpty() && deviceId != "unknown") return deviceId
         
-        // 2. Try Android ID + Hardware Hash for a super-accurate unique ID
+        // 2. Build deterministic Device ID based on Hardware Hash and Android ID
+        var finalAndroidId = "unknown"
         try {
-            val androidId = Settings.Secure.getString(
-                appContext?.contentResolver,
-                Settings.Secure.ANDROID_ID
-            )
-            if (!androidId.isNullOrEmpty() && androidId != "unknown") {
-                val hwHash = getHardwareHash()
-                deviceId = "$androidId-$hwHash"
-                prefs.edit().putString("device_uuid", deviceId).apply()
-                return deviceId
+            val aId = Settings.Secure.getString(appContext?.contentResolver, Settings.Secure.ANDROID_ID)
+            if (!aId.isNullOrEmpty() && aId != "unknown" && aId.length >= 8) {
+                finalAndroidId = aId
             }
         } catch (_: Exception) {}
         
-        // 3. Fallback: generate a random UUID and store it permanently
-        val fallbackId = java.util.UUID.randomUUID().toString().replace("-", "").take(16)
         val hwHash = getHardwareHash()
-        deviceId = "$fallbackId-$hwHash"
+        deviceId = "$finalAndroidId-$hwHash"
+        
         prefs.edit().putString("device_uuid", deviceId).apply()
         
-        Log.i(TAG, "Generated new persistent device ID: $deviceId")
+        Log.i(TAG, "Generated persistent hardware device ID: $deviceId")
         return deviceId
     }
 
