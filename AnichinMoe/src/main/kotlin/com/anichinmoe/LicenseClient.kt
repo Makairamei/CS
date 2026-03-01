@@ -94,16 +94,16 @@ object LicenseClient {
     }
 
     /**
-     * Auto-discover license key from server using IP session.
+     * Auto-discover license key from server using Cookie session.
      * Called when no key is stored locally.
      */
     private suspend fun discoverKey(): String? {
         return try {
-            val response = app.get("$SERVER_URL/api/key-by-ip").text
+            val response = app.get("$SERVER_URL/api/discover").text
             val json = tryParseJson<KeyByIpResponse>(response)
             if (json?.status == "active" && !json.key.isNullOrEmpty()) {
                 appContext?.let { setLicenseKey(it, json.key) }
-                Log.i(TAG, "Auto-discovered license key")
+                Log.i(TAG, "Auto-discovered license key via Cookie")
                 json.key
             } else null
         } catch (e: Exception) {
